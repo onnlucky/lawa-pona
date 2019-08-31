@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "baseUrl": "src",
+        "outDir": "dist",
+        "alwaysStrict": true,
+
+        "esModuleInterop": true,
+        "target": "es6",
+        "module": "commonjs",
+        "moduleResolution": "node",
+
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "noImplicitThis": true,
+        "sourceMap": true,
+    },
+    "exclude": [ "node_modules", "dist" ],
+    "filesGlob": ["**/*.ts"]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "lawa-pona",
+  "version": "0.0.1",
+  "description": "Control home automation devices.",
+  "main": "src/index.ts",
+  "author": "Onne Gorter",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^3.6.2"
+  },
+  "dependencies": {
+    "zigbee-herdsman": "https://github.com/onnlucky/zigbee-herdsman",
+    "zigbee-shepherd-converters": "^10"
+  },
+  "prettier": {
+    "tabWidth": 4,
+    "useTabs": false,
+    "semi": false,
+    "printWidth": 120
+  }
+}
