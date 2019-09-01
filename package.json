@@ -6,9 +6,11 @@
   "author": "Onne Gorter",
   "license": "MIT",
   "devDependencies": {
+    "@types/debug": "^4.1.5",
     "typescript": "^3.6.2"
   },
   "dependencies": {
+    "debug": "^4.1.1",
     "zigbee-herdsman": "https://github.com/onnlucky/zigbee-herdsman",
     "zigbee-shepherd-converters": "^10"
   },

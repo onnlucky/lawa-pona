@@ -1,8 +1,34 @@
 import { Controller } from "zigbee-herdsman"
 import { Endpoint, Group } from "zigbee-herdsman/dist/controller/model"
 
-type Callback = (error: any) => void
 type KeyValue = { [key: string]: any }
+
+function buildCommand(mapped: any, command: string, value: unknown, commands: KeyValue) {
+    const converter = mapped.toZigbee.find((c: any) => c.key.includes(command))
+    if (!converter) {
+        console.log(`No converter available for '${command}' (${value})`)
+        return []
+    }
+    return converter.convert(command, value, commands, "set", null, {})
+}
+
+export function buildCommands(mapped: any, commands: KeyValue) {
+    const res: any[] = []
+    if (commands.hasOwnProperty("state")) {
+        res.push(...buildCommand(mapped, "state", commands.state, commands))
+    }
+    if (commands.hasOwnProperty("brightness")) {
+        res.push(...buildCommand(mapped, "brightness", commands.brightness, commands))
+    }
+    Object.entries(commands).forEach(([command, value]) => {
+        if (command === "state") return
+        if (command === "brightness") return
+        res.push(...buildCommand(mapped, command, value, commands))
+    })
+    return res.filter(e => e)
+}
+
+type Callback = (error: any) => void
 type Options = KeyValue | Callback | undefined
 type Attribute = string | number | { ID: number; type: number }
 
@@ -24,6 +50,9 @@ function handle(cb: Callback, promise: Promise<any>) {
 
 export class SheperdEndpoint {
     constructor(public endpoint: Endpoint) {}
+    get ieeeAddr(): string {
+        return this.endpoint["deviceNetworkAddress"]
+    }
     bind(clusterKey: string | number, target: Group | Endpoint | SheperdEndpoint, cb: Callback) {
         if (target instanceof SheperdEndpoint) {
             target = target.endpoint
