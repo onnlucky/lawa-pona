@@ -7,13 +7,17 @@ import {
     JoinedEvent,
     LeaveEvent
 } from "zigbee-herdsman"
-const zigbeeShepherdConverters = require("zigbee-shepherd-converters")
+import { Sheperd, SheperdEndpoint } from "./SheperdCompat"
+// @ts-ignore
+import zigbeeShepherdConverters from "zigbee-shepherd-converters"
 
 console.log("starting")
 const controller = new Controller({
     databasePath: "data.json",
-    serialPort: { path: "/dev/tty.usbmodem1431" }
+    serialPort: { path: "/dev/tty.usbmodem144101" }
 })
+const sheperd = new Sheperd(controller)
+
 controller.start()
 controller.on(Events.adapterDisconnected, (event: any) => {
     console.log("Events.adapterDisconnected", event)
@@ -65,20 +69,11 @@ function configure(event: InterviewEvent | MessageEvent) {
         return
     }
 
-    // compatibility
-    const sheperd = {
-        find(ieeeAddr: string, endpoint: number) {
-            const device = controller.getDeviceByAddress(ieeeAddr)
-            if (!device) return undefined
-            return device.getEndpoint(endpoint)
-        }
-    }
-
-    const coordinator = controller.getDevice({ type: "Coordinator" })!.getEndpoint(1)
-    console.log("doing configuration...", coordinator)
-    mapped.configure(device.ieeeAddr, sheperd, coordinator, (ok: any, message: any) => {
-        // TODO the callback won't fire, as the commands return promises
-        console.log("configured?", ok, message)
+    const coordinator = controller.getDevice({ type: "Coordinator" })!
+    const coordinatorEndpoint = new SheperdEndpoint(coordinator.getEndpoint(1))
+    console.log("doing configuration...")
+    mapped.configure(device.ieeeAddr, sheperd, coordinatorEndpoint, (ok: any, error: any) => {
+        console.log("configured?", ok, error)
         if (!ok) {
             device.meta.configured = false
             device.save()
