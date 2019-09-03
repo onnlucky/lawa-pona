@@ -1,10 +1,25 @@
-export class Dimmer {
+import { Device, DeviceImplementation } from "./Device"
+import { Light } from "./Light"
+import { bind } from "activestate/ActiveState"
+
+export class Dimmer extends Device {
+    device = new DimmerDevice(this)
     level = 0
 
+    connectTo(sink: Light) {
+        bind(this, "level").to(sink, "brightness")
+    }
+}
+
+class DimmerDevice extends DeviceImplementation<Dimmer> {
+    level = 0
     lastTime = 0
     lastRate = 0
 
-    constructor(public ieeeAddr: string) {}
+    stateChanged(state: Dimmer, external: boolean) {
+        if (external) return
+        this.level = state.level
+    }
 
     process(now: number) {
         if (!this.lastTime) return
@@ -17,6 +32,10 @@ export class Dimmer {
         this.level = Math.floor(this.level + change)
         if (this.level < 0) this.level = 0
         if (this.level > 255) this.level = 255
+
+        const level = Math.round(this.level)
+        if (level === this.state.level) return
+        this.state.update({ level })
     }
 
     move(rate: number, movemode: number) {

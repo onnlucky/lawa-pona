@@ -5,8 +5,16 @@
   "main": "src/index.ts",
   "author": "Onne Gorter",
   "license": "MIT",
+  "scripts": {
+    "start": "nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.test.ts' --exec 'ts-node src/index.ts'",
+    "test": "yarn jest",
+    "watch": "yarn jest --watch"
+  },
   "devDependencies": {
     "@types/debug": "^4.1.5",
+    "@types/jest": "^24.0.18",
+    "jest": "^24.9.0",
+    "ts-jest": "^24.0.2",
     "typescript": "^3.6.2"
   },
   "dependencies": {
