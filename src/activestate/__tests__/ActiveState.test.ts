@@ -1,5 +1,37 @@
 import { SECONDS, MINUTES, PERCENT, HOUR } from "../units"
-import { Context, Location, Button, Light, Sensor, bind, when } from "../ActiveState"
+import { Context, bind, when, ActiveState } from "../ActiveState"
+
+class Light extends ActiveState {
+    on = false
+    brightness = 0
+    get off(): boolean {
+        return !this.on
+    }
+
+    translateKeyValue(key: string, value: any): [string, any] | null {
+        if (key === "off") return ["on", !value]
+        return super.translateKeyValue(key, value)
+    }
+
+    timeoutExpired(cx: Context) {
+        cx.update(this, { on: false })
+    }
+}
+
+class Button extends ActiveState {
+    on = false
+}
+
+class Sensor extends ActiveState {
+    on = false
+    postProcess() {
+        this.on = false
+    }
+}
+
+class Location extends ActiveState {
+    latenight = false
+}
 
 test("light", () => {
     const light = new Light()
@@ -32,7 +64,7 @@ test("bind", () => {
     expect(light.on).toBeTruthy()
     expect(button.on).toBeTruthy()
 
-    cx.change(button, "off")
+    cx.change(button, { on: false })
     expect(button.on).toBeFalsy()
     expect(light.on).toBeFalsy()
 })
@@ -83,7 +115,7 @@ test("sensor, button, night -> light", () => {
 
     // turn button off, light should go off
     expect(sensor.enabled).toBeTruthy()
-    cx.change(button, "off")
+    cx.change(button, { on: false })
     expect(light.on).toBeFalsy()
     expect(sensor.enabled).toBeFalsy()
 

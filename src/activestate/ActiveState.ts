@@ -292,14 +292,13 @@ export class ActiveState implements TimerObject {
     _listener: ActiveStateListener | null = null
 
     constructor(listener?: ActiveStateListener) {
-        this._context = Context.current()
         if (listener) {
             this._listener = listener
         }
     }
 
     update(...updates: (keyof this | Partial<this>)[]) {
-        this._context.update(this, makeUpdate(this, updates))
+        Context.current().update(this, makeUpdate(this, updates))
     }
 
     /** Property 'lastChange' tracks last update to this device. */
