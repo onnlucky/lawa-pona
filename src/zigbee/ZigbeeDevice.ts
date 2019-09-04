@@ -6,6 +6,9 @@ export interface ZigbeeDeviceDelegate {
 }
 
 export class ZigbeeDevice {
+    get ieeeAddr() {
+        return this.device.ieeeAddr
+    }
     device: Device
     endpoint: Endpoint
     mapped: any

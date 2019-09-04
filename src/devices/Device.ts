@@ -6,6 +6,7 @@ export abstract class DeviceImplementation<T extends Device> implements ActiveSt
     backend: ZigbeeDevice
 
     constructor(public state: T) {
+        state._listener = this
         this.backend = ZigbeeContext.current().find(state.ieeeAddr)
         this.backend.setDelegate(this)
     }

@@ -33,7 +33,7 @@ export class Context {
     debug = false
 
     bind() {
-        if (!__current) throw Error("assertion error: no other context should be bound")
+        if (__current) throw Error("assertion error: no other context should be bound")
         __current = this
     }
 
@@ -133,6 +133,14 @@ export class Context {
                 this.processSourceTimer(source, update.forTime)
                 source.postProcess(update)
             }
+        }
+        this.log("-[", this.tick, "]- calling listeners:", this.scheduled.length)
+        for (let i = 0, il = this.scheduled.length; i < il; i++) {
+            const source = this.scheduled[i]
+            const listener = source._listener
+            if (!listener) continue
+            listener.stateChanged(source, source.byUser)
+            source.byUser = false
         }
         this.timers.sort((a, b) => a._timeout - b._timeout)
         this.scheduled = []
