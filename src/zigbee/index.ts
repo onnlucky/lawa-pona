@@ -7,7 +7,7 @@ import {
     JoinedEvent,
     LeaveEvent
 } from "zigbee-herdsman"
-import { Sheperd, SheperdEndpoint, buildCommands } from "./SheperdCompat"
+import { Sheperd, SheperdEndpoint, MappedDevice } from "./SheperdCompat"
 // @ts-ignore
 import zigbeeShepherdConverters from "zigbee-shepherd-converters"
 import { ZigbeeDevice } from "./ZigbeeDevice"
@@ -15,7 +15,7 @@ import { ZigbeeDevice } from "./ZigbeeDevice"
 import { error, log, debug } from "log"
 import { findUsbDevice } from "findUsbDevice"
 
-async function start() {
+export async function start() {
     log("starting...")
     const serialPort = await findUsbDevice()
     const controller = new Controller({
@@ -53,7 +53,7 @@ async function start() {
         }
 
         const delegate: ZigbeeDevice = (device as any).__delegate
-        if (delegate) {
+        if (delegate && delegate.processor) {
             delegate.processor.command(event.cluster, event.type, event.data)
             return
         }
@@ -87,7 +87,7 @@ async function start() {
             return
         }
 
-        const mapped = zigbeeShepherdConverters.findByZigbeeModel(device.modelID)
+        const mapped = zigbeeShepherdConverters.findByZigbeeModel(device.modelID) as MappedDevice | undefined
         if (!mapped) {
             error("configuration failed: unknown device:", device.modelID)
             debug(device)
@@ -118,4 +118,3 @@ async function start() {
         device.save()
     }
 }
-start()

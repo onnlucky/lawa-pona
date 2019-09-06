@@ -3,7 +3,16 @@ import { Endpoint, Group } from "zigbee-herdsman/dist/controller/model"
 
 type KeyValue = { [key: string]: any }
 
-function buildCommand(mapped: any, command: string, value: unknown, commands: KeyValue) {
+interface Converter {
+    convert(command: string, value: unknown, commands: KeyValue, u1: any, u2: any, u3: any): any[]
+}
+
+export interface MappedDevice {
+    toZigbee: Converter[]
+    configure(ieeeAddr: string, sheperd: any, coordinatorEndpoint: any, cb: (ok: any, error: any) => void): void
+}
+
+function buildCommand(mapped: MappedDevice, command: string, value: unknown, commands: KeyValue) {
     const converter = mapped.toZigbee.find((c: any) => c.key.includes(command))
     if (!converter) {
         console.log(`No converter available for '${command}' (${value})`)
@@ -12,7 +21,7 @@ function buildCommand(mapped: any, command: string, value: unknown, commands: Ke
     return converter.convert(command, value, commands, "set", null, {})
 }
 
-export function buildCommands(mapped: any, commands: KeyValue) {
+export function buildCommands(mapped: MappedDevice, commands: KeyValue): any[] {
     const res: any[] = []
     if (commands.hasOwnProperty("state")) {
         res.push(...buildCommand(mapped, "state", commands.state, commands))

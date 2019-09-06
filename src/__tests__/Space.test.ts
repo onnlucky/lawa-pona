@@ -7,19 +7,20 @@ import { Context } from "activestate/ActiveState"
 jest.mock("../zigbee/ZigbeeDevice")
 
 const deviceCommand = jest.fn()
-const backendCommand = jest.fn()
 
 function device(ieeeAddr: string): ZigbeeDevice {
     return {
         ieeeAddr,
-        device: {} as any,
-        mapped: {},
-        processor: {
-            command: backendCommand
-        },
+        device: null,
+        mapped: null,
+        processor: null,
         command: deviceCommand,
         setCommandProcessor(processor: any) {
             this.processor = processor
+        },
+        setDevice(device: any, mapped: any) {
+            this.device = device
+            this.mapped = mapped
         }
     }
 }
@@ -28,6 +29,7 @@ const Ox1111 = device("0x1111")
 const Oxffff = device("0xffff")
 
 const mockZigbeeContext = {
+    bind() {},
     find(ieeeAddr: string) {
         if (ieeeAddr === Ox1111.ieeeAddr) return Ox1111
         if (ieeeAddr === Oxffff.ieeeAddr) return Oxffff
@@ -56,4 +58,7 @@ test("space", () => {
     cx.change(light, "on")
     expect(deviceCommand).toHaveBeenCalledTimes(1)
     expect(deviceCommand).toHaveBeenCalledWith({ brightness: 1 })
+
+    light.processor.command("genOnOff", "genOnOff", { state: "off" })
+    expect(light.on).toBeFalsy()
 })

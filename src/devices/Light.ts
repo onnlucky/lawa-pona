@@ -23,4 +23,14 @@ class LightCommandProcessor extends CommandProcessor<Light> {
     stateChanged(state: Light, external: boolean): void {
         this.device.command({ brightness: state.brightness })
     }
+
+    command(_cluster: string, command: string, data: any) {
+        if (command === "genOnOff") {
+            if (data.state === "on") {
+                this.state.update("on")
+            } else {
+                this.state.update("off")
+            }
+        }
+    }
 }

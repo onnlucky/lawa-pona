@@ -1,5 +1,6 @@
-import { buildCommands } from "./SheperdCompat"
+import { buildCommands, MappedDevice } from "./SheperdCompat"
 import { Device } from "zigbee-herdsman/dist/controller/model"
+import { start } from "zigbee"
 
 export interface ZigbeeCommandProcessor {
     command(_cluster: string, _command: string, _data: any): void
@@ -8,16 +9,19 @@ export interface ZigbeeCommandProcessor {
 export class ZigbeeDevice {
     constructor(public ieeeAddr: string) {}
 
-    device: Device
-    mapped: any
-    processor: ZigbeeCommandProcessor
+    device: Device | null = null
+    mapped: MappedDevice | null = null
+    processor: ZigbeeCommandProcessor | null = null
 
-    command(object: any) {
-        const commands = buildCommands(this.mapped, object)
+    command(object: { [key: string]: unknown }) {
+        const { device, mapped } = this
+        if (!device || !mapped) return
+        const endpoint = device.getEndpoint(1)
+        const commands = buildCommands(mapped, object)
         commands.forEach(async c => {
             if (c.cmdType !== "functional") return
             try {
-                await this.device.getEndpoint(1).command(c.cid, c.cmd, c.zclData, c.cfg)
+                await endpoint.command(c.cid, c.cmd, c.zclData, c.cfg)
             } catch (e) {
                 console.error("command", e)
             }
@@ -27,6 +31,11 @@ export class ZigbeeDevice {
     setCommandProcessor(processor: ZigbeeCommandProcessor) {
         this.processor = processor
     }
+
+    setDevice(device: Device, mapped: MappedDevice) {
+        this.device = device
+        this.mapped = mapped
+    }
 }
 
 let __current: ZigbeeContext | null = null
@@ -35,6 +44,12 @@ export class ZigbeeContext {
     static current(): ZigbeeContext {
         if (!__current) throw Error("zigbee not initialized")
         return __current
+    }
+
+    bind() {
+        if (__current) throw Error("cannot bind zigbee twice")
+        start()
+        __current = this
     }
 
     find(ieeeAddr: string): ZigbeeDevice {

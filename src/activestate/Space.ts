@@ -1,4 +1,5 @@
 import { ActiveState, Context } from "./ActiveState"
+import { ZigbeeContext } from "zigbee/ZigbeeDevice"
 
 export class Space extends ActiveState {
     latenight = false
@@ -6,9 +7,6 @@ export class Space extends ActiveState {
     constructor(public config: any) {
         super()
         new Context().bind()
+        new ZigbeeContext().bind()
     }
 }
-
-// class Implementation implements ActiveStateImplementation {
-//     stateChanged(state: Space, external: boolean) {}
-// }
