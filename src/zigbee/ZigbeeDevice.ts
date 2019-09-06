@@ -1,7 +1,7 @@
 import { buildCommands } from "./SheperdCompat"
 import { Device } from "zigbee-herdsman/dist/controller/model"
 
-export interface ZigbeeDeviceDelegate {
+export interface ZigbeeCommandProcessor {
     command(_cluster: string, _command: string, _data: any): void
 }
 
@@ -10,7 +10,7 @@ export class ZigbeeDevice {
 
     device: Device
     mapped: any
-    backing: ZigbeeDeviceDelegate
+    processor: ZigbeeCommandProcessor
 
     command(object: any) {
         const commands = buildCommands(this.mapped, object)
@@ -24,8 +24,8 @@ export class ZigbeeDevice {
         })
     }
 
-    setDelegate(backing: ZigbeeDeviceDelegate) {
-        this.backing = backing
+    setCommandProcessor(processor: ZigbeeCommandProcessor) {
+        this.processor = processor
     }
 }
 

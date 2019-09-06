@@ -54,7 +54,7 @@ async function start() {
 
         const delegate: ZigbeeDevice = (device as any).__delegate
         if (delegate) {
-            delegate.backing.command(event.cluster, event.type, event.data)
+            delegate.processor.command(event.cluster, event.type, event.data)
             return
         }
 

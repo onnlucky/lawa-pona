@@ -1,7 +1,7 @@
-import { DeviceImplementation, OnOffDevice } from "./Device"
+import { CommandProcessor, OnOffDevice } from "./Device"
 
 export class Light extends OnOffDevice {
-    device = new LightDevice(this)
+    processor = new LightCommandProcessor(this)
     brightness = 0
 
     postProcess(update: Partial<this>) {
@@ -15,12 +15,12 @@ export class Light extends OnOffDevice {
     }
 }
 
-class LightDevice extends DeviceImplementation<Light> {
+class LightCommandProcessor extends CommandProcessor<Light> {
     constructor(light: Light) {
         super(light)
     }
 
     stateChanged(state: Light, external: boolean): void {
-        this.backend.command({ brightness: state.brightness })
+        this.device.command({ brightness: state.brightness })
     }
 }

@@ -1,14 +1,14 @@
-import { OnOffDevice, DeviceImplementation } from "./Device"
+import { OnOffDevice, CommandProcessor } from "./Device"
 
 export class MotionSensor extends OnOffDevice {
-    device = new MotionSensorDevice(this)
+    processor = new MotionSensorCommandProcessor(this)
 
     postProcess(_update: Partial<this>) {
         this.on = false
     }
 }
 
-class MotionSensorDevice extends DeviceImplementation<MotionSensor> {
+class MotionSensorCommandProcessor extends CommandProcessor<MotionSensor> {
     stateChanged(_state: MotionSensor, _external: boolean): void {}
 
     command(_cluster: string, command: string, _data: any) {

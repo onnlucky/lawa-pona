@@ -1,9 +1,9 @@
-import { Device, DeviceImplementation } from "./Device"
+import { Device, CommandProcessor } from "./Device"
 import { Light } from "./Light"
 import { bind } from "activestate/ActiveState"
 
 export class Dimmer extends Device {
-    device = new DimmerDevice(this)
+    processor = new DimmerCommandProcessor(this)
     level = 0
 
     connectTo(sink: Light) {
@@ -11,7 +11,7 @@ export class Dimmer extends Device {
     }
 }
 
-class DimmerDevice extends DeviceImplementation<Dimmer> {
+class DimmerCommandProcessor extends CommandProcessor<Dimmer> {
     level = 0
     lastTime = 0
     lastRate = 0
