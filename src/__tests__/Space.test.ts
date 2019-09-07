@@ -3,6 +3,7 @@ import { Location } from "activestate/Location"
 import { ZigbeeContext, ZigbeeDevice } from "zigbee/ZigbeeDevice"
 import { Light } from "devices/Light"
 import { Context } from "activestate/ActiveState"
+import { MotionSensor } from "devices"
 
 jest.mock("../zigbee/ZigbeeDevice")
 
@@ -54,8 +55,20 @@ test("space", () => {
     expect(light.processor.device.ieeeAddr).toBe("0x1111")
     cx.change(light, "on")
     expect(deviceCommand).toHaveBeenCalledTimes(1)
-    expect(deviceCommand).toHaveBeenCalledWith({ brightness: 1 })
+    expect(deviceCommand).toHaveBeenCalledWith({ brightness: 255 })
 
     light.processor.receiveCommand("genOnOff", "genOnOff", { state: "off" })
     expect(light.on).toBeFalsy()
+
+    const motion = new MotionSensor("0x3", new Location("Nowhere"))
+    motion.update("on")
+    expect(motion.on).toBeFalsy()
+    expect(cx.timers).toHaveLength(0)
+
+    light.update("on", { forTime: 10 })
+    expect(light.on).toBeTruthy()
+    expect(cx.timers).toHaveLength(1)
+    cx.advanceTimeForTesting(10)
+    expect(light.on).toBeFalsy()
+    expect(cx.timers).toHaveLength(0)
 })

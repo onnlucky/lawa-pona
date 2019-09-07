@@ -31,15 +31,29 @@ export class Context {
     timers: TimerObject[] = []
     scheduled: ActiveState[] = []
     debug = false
+    updateTimeInterval: any = null
+
+    constructor() {
+        this.setTime()
+    }
+
+    setTime() {
+        this.time = Date.now() / 1000
+    }
 
     bind() {
         if (__current) throw Error("assertion error: no other context should be bound")
         __current = this
+        this.updateTimeInterval = setInterval(this.updateTime, 1)
     }
 
     unbind() {
         if (__current !== this) throw Error("assertion error: this context is not bound")
         __current = null
+        if (this.updateTimeInterval) {
+            clearInterval(this.updateTimeInterval)
+            this.updateTimeInterval = null
+        }
     }
 
     static current() {
@@ -93,8 +107,17 @@ export class Context {
         }
     }
 
-    advanceTime(seconds: number) {
+    updateTime = () => {
+        this.setTime()
+        this.runTimers()
+    }
+
+    advanceTimeForTesting(seconds: number) {
         this.time += seconds
+        this.runTimers()
+    }
+
+    runTimers() {
         const timeouts: TimerObject[] = []
         while (this.timers.length > 0) {
             const source = this.timers[0]
@@ -105,6 +128,7 @@ export class Context {
             timeouts.push(source)
         }
         if (timeouts.length === 0) return
+
         this.run(timeouts)
     }
 
@@ -123,6 +147,8 @@ export class Context {
             source._links.forEach(link => link.run(this, source))
         }
         this.log("-[", this.tick, "]- post processing:", this.scheduled.length)
+
+        this.setTime()
         for (let i = 0, il = this.scheduled.length; i < il; i++) {
             const source = this.scheduled[i]
             const update = source._update
@@ -131,6 +157,7 @@ export class Context {
                 source._update = null
                 source.lastChange = this.time
                 this.processSourceTimer(source, update.forTime)
+                this.log("CHANGE:", source.toJSON())
                 source.postProcess(update)
             }
         }
@@ -332,6 +359,19 @@ export class ActiveState implements TimerObject {
 
     toString(): string {
         return this.constructor.name
+    }
+
+    toJSON(): string {
+        const res: any = {}
+        Object.entries(this).forEach(([key, value]) => {
+            if (key.startsWith("_")) return
+            if (key === "lastChange") return
+            if (key === "ieeeAddr") return
+            if (typeof value === "function") return
+            if (typeof value === "object") return
+            res[key] = value
+        })
+        return JSON.stringify(res)
     }
 
     /** To support user multiple friendly names.

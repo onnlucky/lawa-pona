@@ -98,7 +98,7 @@ test("sensor, button, night -> light", () => {
     cx.change(sensor, "on")
     expect(sensor.on).toBeFalsy()
     expect(light.on).toBeTruthy()
-    cx.advanceTime(30 * SECONDS)
+    cx.advanceTimeForTesting(30 * SECONDS)
     expect(light.on).toBeFalsy()
 
     // button on
@@ -108,9 +108,9 @@ test("sensor, button, night -> light", () => {
     // trigger sensor, light should stay on
     cx.change(sensor, "on")
     expect(light.on).toBeTruthy()
-    cx.advanceTime(30 * SECONDS)
+    cx.advanceTimeForTesting(30 * SECONDS)
     expect(light.on).toBeTruthy()
-    cx.advanceTime(30 * SECONDS)
+    cx.advanceTimeForTesting(30 * SECONDS)
     expect(light.on).toBeTruthy()
 
     // turn button off, light should go off
@@ -120,16 +120,16 @@ test("sensor, button, night -> light", () => {
     expect(sensor.enabled).toBeFalsy()
 
     // sensor should reenable
-    cx.advanceTime(30 * SECONDS)
+    cx.advanceTimeForTesting(30 * SECONDS)
     expect(sensor.enabled).toBeTruthy()
 
     // latenight should turn lights off
     cx.change(location, "latenight")
     cx.change(light, "on")
     expect(light.on).toBeTruthy()
-    cx.advanceTime(30 * MINUTES)
+    cx.advanceTimeForTesting(30 * MINUTES)
     expect(light.on).toBeTruthy()
-    cx.advanceTime(1 * HOUR)
+    cx.advanceTimeForTesting(1 * HOUR)
     expect(light.on).toBeFalsy()
 
     // latenight sensor
