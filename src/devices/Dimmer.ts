@@ -58,7 +58,7 @@ class DimmerCommandProcessor extends CommandProcessor<Dimmer> {
         this.lastTime = 0
     }
 
-    command(_cluster: string, command: string, data: any) {
+    receiveCommand(_cluster: string, command: string, data: any) {
         if (command === "commandMove" || command === "commandMoveWithOnOff") {
             this.move(data.rate, data.movemode)
         } else if (command === "commandStop" || command === "commandStopWithOnOff") {

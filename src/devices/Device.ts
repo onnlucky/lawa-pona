@@ -12,11 +12,11 @@ export abstract class CommandProcessor<T extends Device> implements ActiveStateL
 
     constructor(public state: T) {
         state._listener = this
-        this.device = ZigbeeContext.current().find(state.ieeeAddr)
+        this.device = ZigbeeContext.current().getDevice(state.ieeeAddr)
         this.device.setCommandProcessor(this)
     }
 
-    command(_cluster: string, _command: string, _data: any) {}
+    receiveCommand(_cluster: string, _command: string, _data: any) {}
 
     abstract stateChanged(state: ActiveState, external: boolean): void
 }

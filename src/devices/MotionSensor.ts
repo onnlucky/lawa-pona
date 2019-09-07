@@ -11,7 +11,7 @@ export class MotionSensor extends OnOffDevice {
 class MotionSensorCommandProcessor extends CommandProcessor<MotionSensor> {
     stateChanged(_state: MotionSensor, _external: boolean): void {}
 
-    command(_cluster: string, command: string, _data: any) {
+    receiveCommand(_cluster: string, command: string, _data: any) {
         if (command === "motionDetected") {
             this.state.update("on")
         }

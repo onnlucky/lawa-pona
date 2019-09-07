@@ -14,7 +14,7 @@ function device(ieeeAddr: string): ZigbeeDevice {
         device: null,
         mapped: null,
         processor: null,
-        command: deviceCommand,
+        sendCommand: deviceCommand,
         setCommandProcessor(processor: any) {
             this.processor = processor
         },
@@ -25,15 +25,12 @@ function device(ieeeAddr: string): ZigbeeDevice {
     }
 }
 
-const Ox1111 = device("0x1111")
-const Oxffff = device("0xffff")
-
 const mockZigbeeContext = {
+    devicesByAddr: {} as { [key: string]: ZigbeeDevice },
     bind() {},
-    find(ieeeAddr: string) {
-        if (ieeeAddr === Ox1111.ieeeAddr) return Ox1111
-        if (ieeeAddr === Oxffff.ieeeAddr) return Oxffff
-        return device(ieeeAddr)
+    getDevice(ieeeAddr: string) {
+        if (this.devicesByAddr[ieeeAddr]) return this.devicesByAddr[ieeeAddr]
+        return (this.devicesByAddr[ieeeAddr] = device(ieeeAddr))
     }
 }
 
@@ -46,7 +43,7 @@ test("space", () => {
 
     const zigbeeContext = ZigbeeContext.current()
     expect(zigbeeContext).toBeTruthy()
-    expect(zigbeeContext.find("0x1")).toBeTruthy()
+    expect(zigbeeContext.getDevice("0x1")).toBeTruthy()
 
     const cx = Context.current()
     expect(cx).toBeTruthy()
@@ -59,6 +56,6 @@ test("space", () => {
     expect(deviceCommand).toHaveBeenCalledTimes(1)
     expect(deviceCommand).toHaveBeenCalledWith({ brightness: 1 })
 
-    light.processor.command("genOnOff", "genOnOff", { state: "off" })
+    light.processor.receiveCommand("genOnOff", "genOnOff", { state: "off" })
     expect(light.on).toBeFalsy()
 })

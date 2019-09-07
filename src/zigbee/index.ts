@@ -10,12 +10,13 @@ import {
 import { Sheperd, SheperdEndpoint, MappedDevice } from "./SheperdCompat"
 // @ts-ignore
 import zigbeeShepherdConverters from "zigbee-shepherd-converters"
-import { ZigbeeDevice } from "./ZigbeeDevice"
+import { ZigbeeDevice, ZigbeeContext } from "./ZigbeeDevice"
 
 import { error, log, debug } from "log"
 import { findUsbDevice } from "findUsbDevice"
+import { Device } from "zigbee-herdsman/dist/controller/model"
 
-export async function start() {
+export async function start(context: ZigbeeContext, callback: Function) {
     log("starting...")
     const serialPort = await findUsbDevice()
     const controller = new Controller({
@@ -32,7 +33,7 @@ export async function start() {
     })
     controller.on(Events.deviceInterview, (event: InterviewEvent) => {
         debug("Events.deviceInterview", event.device.ieeeAddr, event.device.getEndpoints().length)
-        configure(event)
+        configureDevice(event.device)
     })
     controller.on(Events.deviceJoined, (event: JoinedEvent) => {
         debug("Events.deviceJoined", event.device.ieeeAddr)
@@ -47,14 +48,14 @@ export async function start() {
             debug("Events.message", event.type, event.device.ieeeAddr, event.device.getEndpoints().length)
             if (!triedConfiguring.has(device.ieeeAddr)) {
                 triedConfiguring.add(device.ieeeAddr)
-                configure(event)
+                configureDevice(event.device)
             }
             return
         }
 
         const delegate: ZigbeeDevice = (device as any).__delegate
         if (delegate && delegate.processor) {
-            delegate.processor.command(event.cluster, event.type, event.data)
+            delegate.processor.receiveCommand(event.cluster, event.type, event.data)
             return
         }
 
@@ -63,9 +64,28 @@ export async function start() {
 
     await controller.start()
     log("...started...")
+
     controller.getDevices({}).forEach(async device => {
         if (device.type === "Coordinator") return
-        if (!device.interviewCompleted) return
+        if (!device.interviewCompleted) {
+            error("found a unconfigured device:", device.ieeeAddr, device.modelID)
+            return
+        }
+
+        if (!device.meta.configured) {
+            configureDevice(device)
+            return
+        }
+
+        const mapping = getDeviceMapping(device)
+        if (!mapping) {
+            error("found a configured but unknown device:", device.modelID)
+            debug(device)
+            return
+        }
+
+        addDevice(device, mapping)
+
         debug("pinging:", device.ieeeAddr)
         try {
             log("pinging device:", device.ieeeAddr, device.modelID)
@@ -75,22 +95,35 @@ export async function start() {
         }
     })
     log("...all pinged")
+    callback()
 
-    function configure(event: InterviewEvent | MessageEvent) {
-        const device = event.device
-        if (device.meta.configured) {
-            debug("already configured...")
-            return
+    function addDevice(device: Device, mapped: MappedDevice) {
+        context.getDevice(device.ieeeAddr).setDevice(device, mapped)
+    }
+
+    function getDeviceMapping(device: Device): MappedDevice | undefined {
+        let model = device.modelID
+        if (model === "TRADFRI bulb E27 WS clear 806lm") {
+            model = "TRADFRI bulb E27 WS clear 950lm"
         }
-        if (!event.device.interviewCompleted) {
+        return zigbeeShepherdConverters.findByZigbeeModel(model)
+    }
+
+    function configureDevice(device: Device) {
+        if (!device.interviewCompleted) {
             debug("still interviewing...")
             return
         }
 
-        const mapped = zigbeeShepherdConverters.findByZigbeeModel(device.modelID) as MappedDevice | undefined
+        const mapped = getDeviceMapping(device)
         if (!mapped) {
             error("configuration failed: unknown device:", device.modelID)
             debug(device)
+            return
+        }
+
+        if (device.meta.configured) {
+            debug("already configured...")
             return
         }
 
@@ -99,6 +132,7 @@ export async function start() {
             device.meta.configured = true
             device.save()
             log("configured device:", device.ieeeAddr, device.modelID)
+            addDevice(device, mapped)
             return
         }
 
@@ -110,9 +144,11 @@ export async function start() {
                 error("configuration failed:", error)
                 device.meta.configured = false
                 device.save()
-            } else {
-                log("configured device:", device.ieeeAddr, device.modelID)
+                return
             }
+
+            log("configured device:", device.ieeeAddr, device.modelID)
+            addDevice(device, mapped)
         })
         device.meta.configured = true
         device.save()
