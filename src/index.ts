@@ -1,6 +1,6 @@
 import { Space } from "activestate/Space"
 import { Location } from "activestate/location"
-import { MINUTES } from "activestate/units"
+import { MINUTES, SECONDS } from "activestate/units"
 import { when } from "activestate/ActiveState"
 import { Light, Dimmer, MotionSensor } from "devices"
 
@@ -22,10 +22,10 @@ const light1 = new Light("0x000d6f00137466d0", livingRoom, "Dinner Table Light")
 const dimmer1 = new Dimmer("0x000b57fffe8f5669", livingRoom, "Dimmer")
 dimmer1.connectTo(light1)
 
-new Light("0x1", toilet, "Light 1")
+new Light("0x14b457fffe79d6bf", toilet, "Light 1")
 new Light("0x2", toilet, "Light 2")
-const motion1 = new MotionSensor("0x3", toilet, "Motion Sensor")
-when(motion1, "on").then(toilet.lights, "on", { forTime: 1 * MINUTES })
+const motion1 = new MotionSensor("0x14b457fffe6b2ac8", toilet, "Motion Sensor")
+when(motion1, "on").then(toilet.lights, "on", { forTime: 5 * SECONDS })
 when(motion1, "on")
     .and(space, "latenight")
     .then(toilet.lights, "on", { forTime: 1 * MINUTES, brightness: 0.2 })

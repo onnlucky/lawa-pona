@@ -2,7 +2,7 @@ import { buildCommands, MappedDevice } from "./SheperdCompat"
 import { Device } from "zigbee-herdsman/dist/controller/model"
 import { start as startZigbeeController } from "zigbee"
 
-import { log } from "log"
+import { log, command } from "log"
 
 export interface ZigbeeCommandProcessor {
     receiveCommand(_cluster: string, _command: string, _data: any): void
@@ -16,6 +16,7 @@ export class ZigbeeDevice {
     processor: ZigbeeCommandProcessor | null = null
 
     sendCommand(object: { [key: string]: unknown }) {
+        command(this.ieeeAddr, "-->", object)
         const { device, mapped } = this
         if (!device || !mapped) return
         const endpoint = device.getEndpoint(1)
@@ -37,8 +38,10 @@ export class ZigbeeDevice {
     setDevice(device: Device, mapped: MappedDevice) {
         this.device = device
         this.mapped = mapped
+        ;(device as any).__delegate = this
 
         if (this.processor) {
+            command(this.ieeeAddr, "<--", "device", "online", {})
             this.processor.receiveCommand("device", "online", {})
         }
     }
@@ -57,16 +60,24 @@ export class ZigbeeContext {
     bind() {
         if (__current) throw Error("cannot bind zigbee twice")
         startZigbeeController(this, () => {
+            const known: ZigbeeDevice[] = []
             Object.values(this.devicesByAddr).forEach(d => {
                 const zigbee = d.device
                 const model = zigbee ? zigbee.modelID : "unknown"
                 const configured = zigbee ? !!zigbee.meta.configured : "unknown"
                 if (!d.processor) {
                     log("unused device:", d.ieeeAddr, "'" + model + "', configured:", configured)
-                }
-                if (!d.device) {
+                } else if (!d.device) {
                     log("defined unknown device:", d.ieeeAddr, "'" + model + "', configured:", configured)
+                } else {
+                    known.push(d)
                 }
+            })
+            known.forEach(d => {
+                const zigbee = d.device
+                const model = zigbee ? zigbee.modelID : "unknown"
+                const configured = zigbee ? !!zigbee.meta.configured : "unknown"
+                log("using device:", d.ieeeAddr, "'" + model + "', configured:", configured)
             })
         })
         __current = this

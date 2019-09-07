@@ -12,7 +12,7 @@ class MotionSensorCommandProcessor extends CommandProcessor<MotionSensor> {
     stateChanged(_state: MotionSensor, _external: boolean): void {}
 
     receiveCommand(_cluster: string, command: string, _data: any) {
-        if (command === "motionDetected") {
+        if (command === "commandOnWithTimedOff") {
             this.state.update("on")
         }
     }

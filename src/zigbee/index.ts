@@ -12,7 +12,7 @@ import { Sheperd, SheperdEndpoint, MappedDevice } from "./SheperdCompat"
 import zigbeeShepherdConverters from "zigbee-shepherd-converters"
 import { ZigbeeDevice, ZigbeeContext } from "./ZigbeeDevice"
 
-import { error, log, debug } from "log"
+import { error, log, debug, command } from "log"
 import { findUsbDevice } from "findUsbDevice"
 import { Device } from "zigbee-herdsman/dist/controller/model"
 
@@ -29,7 +29,19 @@ export async function start(context: ZigbeeContext, callback: Function) {
         debug("Events.adapterDisconnected", event)
     })
     controller.on(Events.deviceAnnounce, (event: AnnounceEvent) => {
-        debug("Events.deviceAnnounce", event.device.ieeeAddr)
+        try {
+            debug("Events.deviceAnnounce", event.device.ieeeAddr)
+        } catch (e) {
+            debug("Events.deviceAnnounce", event)
+        }
+        const device = event.device
+        if (!device) return
+        if (!device.meta.configured) {
+            if (!triedConfiguring.has(device.ieeeAddr)) {
+                triedConfiguring.add(device.ieeeAddr)
+                configureDevice(event.device)
+            }
+        }
     })
     controller.on(Events.deviceInterview, (event: InterviewEvent) => {
         debug("Events.deviceInterview", event.device.ieeeAddr, event.device.getEndpoints().length)
@@ -40,6 +52,11 @@ export async function start(context: ZigbeeContext, callback: Function) {
     })
     controller.on(Events.deviceLeave, (event: LeaveEvent) => {
         debug("Events.deviceLeave", event.ieeeAddr)
+        triedConfiguring.delete(event.ieeeAddr)
+        const device = controller.getDeviceByAddress(event.ieeeAddr)
+        if (device) {
+            device.removeFromDatabase()
+        }
     })
     const triedConfiguring = new Set<string>()
     controller.on(Events.message, (event: MessageEvent) => {
@@ -55,14 +72,18 @@ export async function start(context: ZigbeeContext, callback: Function) {
 
         const delegate: ZigbeeDevice = (device as any).__delegate
         if (delegate && delegate.processor) {
+            command(device.ieeeAddr, "<--", event.cluster, event.type, event.data)
             delegate.processor.receiveCommand(event.cluster, event.type, event.data)
             return
         }
-
         debug(device.ieeeAddr, event.cluster, event.type, event.data)
+        if (!delegate) {
+            return error("device without delegate")
+        }
     })
 
     await controller.start()
+    controller.permitJoin(true)
     log("...started...")
 
     controller.getDevices({}).forEach(async device => {
