@@ -188,19 +188,21 @@ class Bind extends Link {
 
     run(cx: Context, source: ActiveState) {
         if (this.lastRun === cx.tick) return
-        this.lastRun = cx.tick
 
         if (source === this.s1) {
             const value = source._update ? source._update[this.f1] : (source as any)[this.f1]
+            if (value === undefined) return
             cx.log("bind1", this.s2.toString(), this.f2, "<-", source.toString(), this.f1, "=", value)
             cx.update(this.s2, { [this.f2]: value })
             if (source.byUser) this.s2.byUser = true
         } else if (source === this.s2) {
             const value = source._update ? source._update[this.f2] : (source as any)[this.f2]
+            if (value === undefined) return
             cx.log("bind2", this.s1.toString(), this.f1, "<-", source.toString(), this.f2, "=", value)
             cx.update(this.s1, { [this.f1]: value })
             if (source.byUser) this.s1.byUser = true
         }
+        this.lastRun = cx.tick
     }
 }
 

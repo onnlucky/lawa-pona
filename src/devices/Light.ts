@@ -9,7 +9,7 @@ export class Light extends OnOffDevice {
         const brightness = update.brightness
         if (on && this.brightness === 0) {
             this.brightness = 255
-        } else if (brightness !== undefined && brightness > 0) {
+        } else if (brightness !== undefined && brightness > 0 && on === undefined) {
             this.on = true
         }
         if (this.brightness < 0) this.brightness = 0
