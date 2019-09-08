@@ -50,8 +50,8 @@ test("space", () => {
     expect(cx).toBeTruthy()
     // cx.debug = true
 
-    const light = new Light("0x1111", new Location("Nowhere"))
-    expect(light._listener).toBeTruthy()
+    const light = new Light("0x1111")
+    expect(light._meta.listener).toBeTruthy()
     expect(light.processor.device.ieeeAddr).toBe("0x1111")
     cx.change(light, "on")
     expect(deviceCommand).toHaveBeenCalledTimes(1)
@@ -60,12 +60,12 @@ test("space", () => {
     light.processor.receiveCommand("genOnOff", "genOnOff", { state: "off" })
     expect(light.on).toBeFalsy()
 
-    const motion = new MotionSensor("0x3", new Location("Nowhere"))
-    motion.update("on")
+    const motion = new MotionSensor("0x3")
+    motion.setState("on")
     expect(motion.on).toBeFalsy()
     expect(cx.timers).toHaveLength(0)
 
-    light.update("on", { forTime: 10 })
+    light.setState("on", { forTime: 10 })
     expect(light.on).toBeTruthy()
     expect(cx.timers).toHaveLength(1)
     cx.advanceTimeForTesting(10)

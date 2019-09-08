@@ -1,20 +1,12 @@
 import { SECONDS, MINUTES, PERCENT, HOUR } from "../units"
-import { Context, bind, when, ActiveState } from "../ActiveState"
+import { Context, bind, when, Rule, ActiveState } from "../ActiveState"
 
 class Light extends ActiveState {
     on = false
     brightness = 0
+
     get off(): boolean {
         return !this.on
-    }
-
-    translateKeyValue(key: string, value: any): [string, any] | null {
-        if (key === "off") return ["on", !value]
-        return super.translateKeyValue(key, value)
-    }
-
-    timeoutExpired(cx: Context) {
-        cx.update(this, { on: false })
     }
 }
 
@@ -23,7 +15,13 @@ class Button extends ActiveState {
 }
 
 class Sensor extends ActiveState {
+    enabled = true
     on = false
+
+    get disabled() {
+        return !this.enabled
+    }
+
     postProcess() {
         this.on = false
     }
@@ -50,6 +48,19 @@ test("context", () => {
     const cx = new Context()
     cx.change(light, "on")
     expect(light.on).toBeTruthy()
+
+    let haveRun = false
+    const rule = new Rule([light], () => {
+        haveRun = true
+        // immediately reflects new state
+        expect(light.on).toBeFalsy()
+        expect(light.previousState().on).toBeTruthy()
+    })
+    expect(light._meta.links).toContain(rule)
+    cx.change(light, "off")
+    expect(light.on).toBeFalsy()
+
+    expect(haveRun).toBeTruthy()
 })
 
 test("bind", () => {

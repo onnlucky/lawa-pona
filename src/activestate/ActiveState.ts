@@ -1,3 +1,8 @@
+// ActiveState's are objects connected by rules that might update them. This
+// always happens in rounds. Per round every rule runs only once. And if multiple
+// rules update the same object, only the last applied update will actually be
+// applied.
+
 interface TimerObject {
     _timeout: number
     timeoutExpired(cx: Context): void
@@ -32,6 +37,7 @@ export class Context {
     scheduled: ActiveState[] = []
     debug = false
     updateTimeInterval: any = null
+    anyStateChanges = false
 
     constructor() {
         this.setTime()
@@ -67,34 +73,44 @@ export class Context {
     }
 
     change<T extends ActiveState>(source: T, ...updates: (keyof T | Partial<T>)[]) {
+        this.anyStateChanges = true
         const update = makeUpdate(source, updates)
         this.log("change:", source.toString(), "to:", update)
-        source._update = update
-        if (source._scheduled === this.tick) return
+        const meta = source._meta
+        meta.updateState(update)
+        if (meta.scheduled === this.tick) return
         source.byUser = true
         this.scheduled.push(source)
         if (!this.running) this.run()
     }
 
     update(source: ActiveState, update: Update) {
+        this.anyStateChanges = true
         this.log("update:", source.toString(), "to:", update)
-        source._update = update
-        if (source._scheduled === this.tick) return
+        const meta = source._meta
+        meta.updateState(update)
+        if (meta.scheduled === this.tick) return
         source.byUser = false
         this.scheduled.push(source)
         if (!this.running) this.run()
     }
 
-    processSourceTimer(source: ActiveState, forTime: number | undefined) {
+    updated(meta: MetaState) {
+        if (meta.scheduled === this.tick) return
+        this.scheduled.push(meta.state)
+        if (!this.running) this.run()
+    }
+
+    processSourceTimer(meta: MetaState, forTime: number | undefined) {
         if (forTime === undefined) {
-            if (source._timeout > 0) {
-                source._timeout = -1
+            if (meta._timeout > 0) {
+                meta._timeout = -1
             }
         } else {
-            if (!source._timeout) {
-                this.timers.push(source)
+            if (!meta._timeout) {
+                this.timers.push(meta)
             }
-            source._timeout = this.time + forTime
+            meta._timeout = this.time + forTime
         }
     }
 
@@ -120,12 +136,12 @@ export class Context {
     runTimers() {
         const timeouts: TimerObject[] = []
         while (this.timers.length > 0) {
-            const source = this.timers[0]
-            if (source._timeout > this.time) break
+            const timer = this.timers[0]
+            if (timer._timeout > this.time) break
             this.timers.shift()
-            if (source._timeout <= 0) continue
-            source._timeout = 0
-            timeouts.push(source)
+            if (timer._timeout <= 0) continue
+            timer._timeout = 0
+            timeouts.push(timer)
         }
         if (timeouts.length === 0) return
 
@@ -138,33 +154,32 @@ export class Context {
         this.tick += 1
         this.log("-[", this.tick, "]- run timers:", timeouts.length)
         for (let i = 0, il = timeouts.length; i < il; i++) {
-            const source = timeouts[i]
-            source.timeoutExpired(this)
+            const timer = timeouts[i]
+            timer.timeoutExpired(this)
         }
         this.log("-[", this.tick, "]- run changes")
         for (let i = 0; i < this.scheduled.length; i++) {
             const source = this.scheduled[i]
-            source._links.forEach(link => link.run(this, source))
+            source._meta.links.forEach(link => link.run(this, source))
         }
         this.log("-[", this.tick, "]- post processing:", this.scheduled.length)
 
         this.setTime()
         for (let i = 0, il = this.scheduled.length; i < il; i++) {
             const source = this.scheduled[i]
-            const update = source._update
+            const update = source._meta.reset()
             if (update) {
-                Object.assign(source, update)
-                source._update = null
                 source.lastChange = this.time
-                this.processSourceTimer(source, update.forTime)
-                this.log("CHANGE:", source.toJSON())
+                source.forTime = 0
+                this.processSourceTimer(source._meta, update.forTime)
+                this.log("CHANGE:", source, update)
                 source.postProcess(update)
             }
         }
         this.log("-[", this.tick, "]- calling listeners:", this.scheduled.length)
         for (let i = 0, il = this.scheduled.length; i < il; i++) {
             const source = this.scheduled[i]
-            const listener = source._listener
+            const listener = source._meta.listener
             if (!listener) continue
             listener.stateChanged(source, source.byUser)
             source.byUser = false
@@ -181,6 +196,22 @@ class Link {
     run(_cx: Context, _source: ActiveState) {}
 }
 
+export class Rule extends Link {
+    constructor(sources: ActiveState[], public body: () => void) {
+        super()
+        sources.forEach(source => source._meta.links.push(this))
+    }
+
+    run(cx: Context) {
+        if (this.lastRun === cx.tick) return
+        cx.anyStateChanges = false
+        this.body()
+        if (cx.anyStateChanges) {
+            this.lastRun = cx.tick
+        }
+    }
+}
+
 class Bind extends Link {
     constructor(public s1: ActiveState, public f1: string, public s2: ActiveState, public f2: string) {
         super()
@@ -189,14 +220,15 @@ class Bind extends Link {
     run(cx: Context, source: ActiveState) {
         if (this.lastRun === cx.tick) return
 
+        const sourceAsData = source as any
         if (source === this.s1) {
-            const value = source._update ? source._update[this.f1] : (source as any)[this.f1]
+            const value = sourceAsData[this.f1]
             if (value === undefined) return
             cx.log("bind1", this.s2.toString(), this.f2, "<-", source.toString(), this.f1, "=", value)
             cx.update(this.s2, { [this.f2]: value })
             if (source.byUser) this.s2.byUser = true
         } else if (source === this.s2) {
-            const value = source._update ? source._update[this.f2] : (source as any)[this.f2]
+            const value = sourceAsData[this.f2]
             if (value === undefined) return
             cx.log("bind2", this.s1.toString(), this.f1, "<-", source.toString(), this.f2, "=", value)
             cx.update(this.s1, { [this.f1]: value })
@@ -211,8 +243,8 @@ export function bind<T extends ActiveState>(source1: T, field1: keyof T) {
     return {
         to: function<S extends ActiveState>(source2: S, field2: keyof S) {
             const bind = new Bind(source1, field1 as string, source2, field2 as string)
-            source1._links.push(bind)
-            source2._links.push(bind)
+            source1._meta.links.push(bind)
+            source2._meta.links.push(bind)
         }
     }
 }
@@ -223,13 +255,14 @@ class Condition {
     evaluate(cx: Context, when: When): boolean {
         cx.log("evaluate:", this.source.toString(), this.match, this.negate ? "negated" : "")
         const source = this.source
+        const sourceAsData = source as any
         for (const [key, value] of Object.entries(this.match)) {
             if (key === "forTime") continue
-            const updatedValue = source._update ? source._update[key] : undefined
+            const updatedValue = sourceAsData[key]
             if (updatedValue !== undefined) {
                 if (updatedValue != value) return false
             } else {
-                if ((source as any)[key] != value) return false
+                if (sourceAsData[key] != value) return false
             }
         }
 
@@ -259,7 +292,7 @@ class When implements TimerObject {
     _timeout = 0
     lastRun = -1
     constructor(public conditions: Condition[], public actions: Action[]) {
-        this.conditions.forEach(condition => condition.source._links.push(this))
+        this.conditions.forEach(condition => condition.source._meta.links.push(this))
     }
 
     run(cx: Context) {
@@ -286,14 +319,14 @@ class When implements TimerObject {
     and<T extends ActiveState>(source: T, ...updates: (keyof T | Partial<T>)[]): this {
         if (this.actions.length > 0) throw Error("cannot add conditions after 'then'")
         this.conditions.push(new Condition(source, makeUpdate(source, updates)))
-        source._links.push(this)
+        source._meta.links.push(this)
         return this
     }
 
     andNot<T extends ActiveState>(source: T, ...updates: (keyof T | Partial<T>)[]): this {
         if (this.actions.length > 0) throw Error("cannot add conditions after 'then'")
         this.conditions.push(new Condition(source, makeUpdate(source, updates), /*negate*/ true))
-        source._links.push(this)
+        source._meta.links.push(this)
         return this
     }
 
@@ -320,86 +353,116 @@ export interface ActiveStateListener {
     stateChanged(state: ActiveState, external: boolean): void
 }
 
-export class ActiveState implements TimerObject {
-    _context: Context
-    _links: Link[] = []
-    _update: Update | null = null
-    _scheduled: number = -1
+const blacklist: { [key: string]: boolean } = {
+    prototype: true,
+    _meta: true,
+    updateState: true,
+    previousState: true,
+    lastChange: true,
+    byUser: true
+}
+
+export type KeyValue = { [key: string]: any }
+
+const __hasOwnProperty = Object.prototype.hasOwnProperty
+export function hasOwnProperty(object: any, key: string) {
+    return __hasOwnProperty.call(object, key)
+}
+
+export class MetaState implements TimerObject {
+    context: Context
+    links: Link[] = []
+    listener: ActiveStateListener | null = null
+    scheduled: number = -1
     _timeout = 0
-    _listener: ActiveStateListener | null = null
 
-    constructor(listener?: ActiveStateListener) {
-        if (listener) {
-            this._listener = listener
-        }
+    // the state object before the context started processing
+    start: KeyValue | null = null
+    // the last update as currently applied
+    update: KeyValue | null = null
+
+    constructor(public state: ActiveState) {}
+
+    reset(): KeyValue | null {
+        const update = this.update
+        this.start = null
+        this.update = null
+        return update
     }
 
-    update(...updates: (keyof this | Partial<this>)[]) {
-        Context.current().update(this, makeUpdate(this, updates))
+    timeoutExpired() {
+        this.state.timeoutExpired()
     }
 
-    /** Property 'lastChange' tracks last update to this device. */
-    lastChange = 0
-
-    /** Property 'byUser' tracks if last change was made by user direct user
-     * manipulation, and not for example by a timer or a sensor. */
-    byUser = false
-
-    /** Property 'forTime' is special and always reads as zero. */
-    get forTime(): number {
-        return 0
-    }
-    set forTime(_: number) {}
-
-    /** Property 'enabled' decides if a device will trigger events. */
-    enabled = true
-
-    /** Property 'disabled' is the friendly name for '!enabled'. */
-    get disabled(): boolean {
-        return !this.enabled
+    getStart() {
+        if (this.start) return this.start
+        const { _meta, ...start } = this.state
+        return (this.start = start)
     }
 
-    toString(): string {
-        return this.constructor.name
-    }
-
-    toJSON(): string {
-        const res: any = {}
-        Object.entries(this).forEach(([key, value]) => {
-            if (key.startsWith("_")) return
-            if (key === "lastChange") return
-            if (key === "ieeeAddr") return
-            if (typeof value === "function") return
-            if (typeof value === "object") return
-            res[key] = value
+    updateState(update: KeyValue) {
+        const start = this.getStart()
+        Object.keys(update).forEach(key => {
+            if (blacklist[key] || !hasOwnProperty(this.state, key)) {
+                throw Error(`cannot update property: '${key}'`)
+            }
         })
-        return JSON.stringify(res)
+        this.update = update
+        Object.assign(this.state, start, update, { _meta: this })
+
+        if (__current) __current.updated(this)
+    }
+}
+
+export class ActiveState {
+    _meta = new MetaState(this)
+
+    lastChange = 0
+    byUser = false
+    forTime = 0
+
+    setState(key: keyof this, update?: Partial<this>) {
+        const data: any = update ? update : {}
+        const [key2, value2] = this.translateKeyValue(key as string, true)
+        data[key2] = value2
+        this._meta.updateState(data)
+    }
+
+    updateState(update: Partial<this>) {
+        this._meta.updateState(update)
+    }
+
+    previousState() {
+        return this._meta.start || this
+    }
+
+    postProcess(_update: Partial<this>) {}
+
+    /** Called when forTime was used with an update and that time has passed.
+     *
+     * Default implementation tries to set "enabled" to true, or "on" to false.
+     */
+    timeoutExpired() {
+        if (hasOwnProperty(this, "enabled")) {
+            this._meta.updateState({ enabled: true })
+        } else if (hasOwnProperty(this, "on")) {
+            this._meta.updateState({ on: false })
+        }
     }
 
     /** To support user multiple friendly names.
      *
      * Provide a getter so typescript knows the property exists. And provide a
-     * translation from the friendly name to the primary field.
+     * translation from the friendly name to the primary field. Default
+     * implementation translates "off" and "disabled".
      *
      * Example:
      * - "enabled" is the primary field
      * - "disabled" is the friendly name, translates to ["enabled", !value]
      */
-    translateKeyValue(key: string, value: any): [string, any] | null {
+    translateKeyValue(key: string, value: any): [string, any] {
+        if (key === "off") return ["on", !value]
         if (key === "disabled") return ["enabled", !value]
-        return null
-    }
-
-    /** Called in post processing phase if this source has had a change.
-     *
-     * One way this is used is for events. Devices that generate events should
-     * set their state, register a change to the context, and then clear that
-     * state in the post processing phase by implementing this method.
-     * */
-    postProcess(_update: Partial<this>) {}
-
-    /** Called when forTime timeout has expired. Default implementation sets enabled to true. */
-    timeoutExpired(cx: Context) {
-        cx.update(this, { enabled: true })
+        return [key, value]
     }
 }

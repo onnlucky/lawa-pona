@@ -37,9 +37,9 @@ class IkeaRemoteCommandProcessor extends CommandProcessor<IkeaRemote> {
             button = IkeaRemote.main
             const on = !this.state.on
             if (on && this.state.level <= 0) {
-                this.state.update({ on, level: 255, button })
+                this.state.updateState({ on, level: 255, button })
             } else {
-                this.state.update({ on, button })
+                this.state.updateState({ on, button })
             }
         } else if (command === "commandStepWithOnOff" || command === "commandStep") {
             const button = data.stepmode === 0 ? IkeaRemote.dimUp : IkeaRemote.dimDown
@@ -50,9 +50,9 @@ class IkeaRemoteCommandProcessor extends CommandProcessor<IkeaRemote> {
             if (this.level > 255) this.level = 255
             if (this.level !== this.state.level) {
                 const on = this.level > 0
-                this.state.update({ level: this.level, on, button })
+                this.state.updateState({ level: this.level, on, button })
             } else {
-                this.state.update({ button })
+                this.state.updateState({ button })
             }
         } else if (command === "commandTradfriArrowSingle") {
             let direction = this.lastCycleValue - data.value
@@ -62,7 +62,7 @@ class IkeaRemoteCommandProcessor extends CommandProcessor<IkeaRemote> {
             if (direction < 0) direction = -1
             if (direction > 0) direction = 1
             button = direction < 0 ? IkeaRemote.cycleLeft : IkeaRemote.cycleRight
-            this.state.update({ button })
+            this.state.updateState({ button })
         }
     }
 }

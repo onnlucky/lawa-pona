@@ -1,5 +1,4 @@
 import { ActiveState, ActiveStateListener, Context } from "../activestate/ActiveState"
-import { Location } from "../activestate/Location"
 import { ZigbeeDevice, ZigbeeCommandProcessor, ZigbeeContext } from "zigbee/ZigbeeDevice"
 
 // here 3 things come together
@@ -11,7 +10,7 @@ export abstract class CommandProcessor<T extends Device> implements ActiveStateL
     device: ZigbeeDevice
 
     constructor(public state: T) {
-        state._listener = this
+        state._meta.listener = this
         this.device = ZigbeeContext.current().getDevice(state.ieeeAddr)
         this.device.setCommandProcessor(this)
     }
@@ -24,7 +23,7 @@ export abstract class CommandProcessor<T extends Device> implements ActiveStateL
 export abstract class Device extends ActiveState {
     processor: CommandProcessor<Device>
 
-    constructor(public ieeeAddr: string, public location: Location, public name?: string) {
+    constructor(public ieeeAddr: string, public name?: string) {
         super()
     }
 }
@@ -37,12 +36,7 @@ export abstract class OnOffDevice extends Device {
         return !this.on
     }
 
-    translateKeyValue(key: string, value: any): [string, any] | null {
-        if (key === "off") return ["on", !value]
-        return super.translateKeyValue(key, value)
-    }
-
-    timeoutExpired(cx: Context) {
-        cx.update(this, { on: false })
+    hasBeenOnFor(): number {
+        return Context.current().time - this.lastChange
     }
 }

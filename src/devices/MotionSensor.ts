@@ -13,7 +13,7 @@ class MotionSensorCommandProcessor extends CommandProcessor<MotionSensor> {
 
     receiveCommand(_cluster: string, command: string, _data: any) {
         if (command === "commandOnWithTimedOff") {
-            this.state.update("on")
+            this.state.updateState({ on: true })
         }
     }
 }

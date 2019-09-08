@@ -1,5 +1,6 @@
 import { ActiveState, Context } from "./ActiveState"
 import { ZigbeeContext } from "zigbee/ZigbeeDevice"
+import { Light } from "devices"
 
 export class Space extends ActiveState {
     latenight = false
@@ -9,4 +10,6 @@ export class Space extends ActiveState {
         new Context().bind()
         new ZigbeeContext().bind()
     }
+
+    forEachLight(body: (light: Light) => void) {}
 }

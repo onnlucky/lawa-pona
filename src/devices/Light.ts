@@ -29,9 +29,9 @@ class LightCommandProcessor extends CommandProcessor<Light> {
     receiveCommand(_cluster: string, command: string, data: any) {
         if (command === "genOnOff") {
             if (data.state === "on") {
-                this.state.update("on")
+                this.state.updateState({ on: true })
             } else {
-                this.state.update("off")
+                this.state.updateState({ on: false })
             }
         }
     }

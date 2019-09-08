@@ -35,7 +35,7 @@ class DimmerCommandProcessor extends CommandProcessor<Dimmer> {
 
         const level = Math.round(this.level)
         if (level === this.state.level) return
-        this.state.update({ level })
+        this.state.updateState({ level })
     }
 
     move(rate: number, movemode: number) {
