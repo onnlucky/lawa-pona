@@ -1,23 +1,17 @@
-import { MINUTES } from "activestate/units"
+import { rule, location, units, SmartHome } from "smarthome"
 import { Light, Dimmer, MotionSensor, Outlet, IkeaRemote } from "devices"
-import { Space } from "activestate/Space"
-import { ActiveState } from "activestate/ActiveState"
 
-function rule(sources: ActiveState[], run: () => void): void {}
-function rerunAfter(seconds: number) {}
-function location(name: string, body: () => void): void {}
-
-const home = new Space({ location: "NL" })
+const home = new SmartHome({ location: "NL" })
 
 rule([home], () => {
     if (!home.latenight) return
     home.forEachLight(light => {
         if (!light.on) return
-        const timeLeft = 30 * MINUTES - light.hasBeenOnFor()
+        const timeLeft = 30 * units.MINUTES - light.hasBeenOnFor()
         if (timeLeft <= 0) {
             light.setState("off")
         } else {
-            rerunAfter(timeLeft)
+            rule.rerunAfter(timeLeft)
         }
     })
 })

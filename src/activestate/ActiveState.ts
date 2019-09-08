@@ -96,6 +96,7 @@ export class Context {
     }
 
     updated(meta: MetaState) {
+        this.anyStateChanges = true
         if (meta.scheduled === this.tick) return
         this.scheduled.push(meta.state)
         if (!this.running) this.run()

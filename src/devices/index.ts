@@ -1,3 +1,4 @@
+export { Device } from "./Device"
 export { Light } from "./Light"
 export { Outlet } from "./Outlet"
 export { Dimmer } from "./Dimmer"
