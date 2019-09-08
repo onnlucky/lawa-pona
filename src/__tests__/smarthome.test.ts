@@ -1,9 +1,8 @@
-import { Space } from "activestate/Space"
-import { Location } from "activestate/Location"
+import { rule, location, units, SmartHome } from "smarthome"
+import { Light, Dimmer, MotionSensor, Outlet, IkeaRemote } from "devices"
+
 import { ZigbeeContext, ZigbeeDevice } from "zigbee/ZigbeeDevice"
-import { Light } from "devices/Light"
-import { Context, Rule } from "activestate/ActiveState"
-import { MotionSensor } from "devices"
+import { Context } from "activestate/Context"
 
 jest.mock("../zigbee/ZigbeeDevice")
 
@@ -40,7 +39,7 @@ ZigbeeContext.current = jest.fn(() => {
 })
 
 test("space", () => {
-    new Space({ location: "NL" })
+    const home = new SmartHome({ location: "NL" })
 
     const zigbeeContext = ZigbeeContext.current()
     expect(zigbeeContext).toBeTruthy()
@@ -72,17 +71,17 @@ test("space", () => {
     expect(motion.on).toBeFalsy()
     expect(cx.timers).toHaveLength(0)
 
-    const rule = new Rule([motion], () => {
+    const rule1 = rule([motion], () => {
         if (motion.on) {
             light.setState("on", { forTime: 10 })
         }
     })
 
     expect(light.on).toBeFalsy()
-    expect(rule.lastRun).not.toBe(cx.tick)
+    expect(rule1.lastRun).not.toBe(cx.tick)
 
     motion.setState("on")
-    expect(rule.lastRun).toBe(cx.tick)
+    expect(rule1.lastRun).toBe(cx.tick)
     expect(motion.on).toBeFalsy()
     expect(light.on).toBeTruthy()
     expect(cx.timers).toHaveLength(1)

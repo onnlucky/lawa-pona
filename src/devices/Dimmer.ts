@@ -1,13 +1,13 @@
 import { Device, CommandProcessor } from "./Device"
 import { Light } from "./Light"
-import { bind } from "activestate/ActiveState"
+import { bind } from "activestate/Links"
 
 export class Dimmer extends Device {
     processor = new DimmerCommandProcessor(this)
     level = 0
 
     connectTo(sink: Light) {
-        bind(this, "level").to(sink, "brightness")
+        bind(this, "level", sink, "brightness")
     }
 }
 

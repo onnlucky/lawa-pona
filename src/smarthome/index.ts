@@ -1,6 +1,11 @@
-import { ActiveState, Context, Rule } from "activestate/ActiveState"
+import { ActiveState } from "activestate/ActiveState"
 import { ZigbeeContext } from "zigbee/ZigbeeDevice"
 import { Device, Light } from "devices"
+import { Context } from "activestate/Context"
+export { rule } from "activestate/Links"
+import * as units from "./units"
+
+export { units }
 
 export interface SmartHomeOptions {
     name: string
@@ -35,17 +40,9 @@ export class SmartHome extends ActiveState {
 export function location(name: string, body: () => void) {
     const home = SmartHome.current()
     home.beginLocation(name)
-    body()
-    home.endLocation(name)
+    try {
+        body()
+    } finally {
+        home.endLocation(name)
+    }
 }
-
-export function rule(onChanges: ActiveState[], body: () => void) {
-    return new Rule(onChanges, body)
-}
-
-rule.rerunAfter = (seconds: number) => {
-    const context = Context.current()
-}
-
-import * as units from "activestate/units"
-export { units }

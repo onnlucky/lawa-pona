@@ -9,7 +9,7 @@ rule([home], () => {
         if (!light.on) return
         const timeLeft = 30 * units.MINUTES - light.hasBeenOnFor()
         if (timeLeft <= 0) {
-            light.setState("off")
+            light.turnOff()
         } else {
             rule.rerunAfter(timeLeft)
         }
@@ -20,22 +20,22 @@ location("Living Room", () => {
     const l1 = new Light("0x000d6f00137466d0", "Dinner Table Light")
     new Dimmer("0x000b57fffe8f5669", "Dimmer").connectTo(l1)
 
-    const l2 = new Light("0x00", "Living Room Light")
+    const l2 = new Light("0x14b457fffe79d6bf", "Living Room Light")
     const remote = new IkeaRemote("0x000b57fffef642e1", "Ikea Remote")
     remote.connectTo(l2)
 
-    const l3 = new Outlet("0x00", "TV Light")
-    const l4 = new Outlet("0x00", "Reading Light")
+    const l3 = new Outlet("0x000d6ffffedaaa1b", "TV Light")
+    const l4 = new Outlet("0x000d6ffffed63ea9", "Reading Light")
 
     rule([remote], () => {
         const off1 = remote.button === IkeaRemote.cycleLeft
-        const off2 = remote.level === 0 && remote.button === IkeaRemote.dimDown
+        const off2 = remote.previousState().level === 0 && remote.button === IkeaRemote.dimDown
         if (off1 || off2) {
-            l3.setState("off")
-            l4.setState("off")
+            l3.turnOff()
+            l4.turnOff()
         } else if (remote.button === IkeaRemote.cycleRight) {
-            l3.setState("on")
-            l4.setState("on")
+            l3.turnOn()
+            l4.turnOn()
         }
     })
 })

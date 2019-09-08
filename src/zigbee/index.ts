@@ -16,8 +16,24 @@ import { error, log, debug, command } from "log"
 import { findUsbDevice } from "findUsbDevice"
 import { Device } from "zigbee-herdsman/dist/controller/model"
 
-export async function start(context: ZigbeeContext, callback: Function) {
-    log("starting...")
+function sleep(seconds: number) {
+    return new Promise(resolve => setTimeout(resolve, seconds * 1000))
+}
+
+export async function start(context: ZigbeeContext, callback: (error?: string) => void) {
+    do {
+        try {
+            log("starting...")
+            await runController(context, callback)
+            await sleep(1)
+        } catch (e) {
+            callback("exception: " + e)
+            await sleep(10)
+        }
+    } while (true)
+}
+
+async function runController(context: ZigbeeContext, callback: Function): Promise<void> {
     const serialPort = await findUsbDevice()
     const controller = new Controller({
         databasePath: "data.json",
@@ -25,9 +41,13 @@ export async function start(context: ZigbeeContext, callback: Function) {
     })
     const sheperd = new Sheperd(controller)
 
+    let exit: Function
+    const exitPromise = new Promise(resolve => (exit = resolve))
     controller.on(Events.adapterDisconnected, (event: any) => {
         debug("Events.adapterDisconnected", event)
+        exit()
     })
+
     controller.on(Events.deviceAnnounce, (event: AnnounceEvent) => {
         try {
             debug("Events.deviceAnnounce", event.device.ieeeAddr)
@@ -174,4 +194,6 @@ export async function start(context: ZigbeeContext, callback: Function) {
         device.meta.configured = true
         device.save()
     }
+
+    await exitPromise
 }

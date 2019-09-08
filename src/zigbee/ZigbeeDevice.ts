@@ -57,9 +57,23 @@ export class ZigbeeContext {
         return __current
     }
 
+    offline() {
+        Object.values(this.devicesByAddr).forEach(d => {
+            d.device = null
+            d.mapped = null
+        })
+    }
+
     bind() {
         if (__current) throw Error("cannot bind zigbee twice")
-        startZigbeeController(this, () => {
+
+        startZigbeeController(this, error => {
+            if (error) {
+                log(error)
+                this.offline()
+                return
+            }
+
             const known: ZigbeeDevice[] = []
             Object.values(this.devicesByAddr).forEach(d => {
                 const zigbee = d.device

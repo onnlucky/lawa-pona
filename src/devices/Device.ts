@@ -1,5 +1,6 @@
-import { ActiveState, ActiveStateListener, Context } from "../activestate/ActiveState"
+import { ActiveState, ActiveStateListener } from "../activestate/ActiveState"
 import { ZigbeeDevice, ZigbeeCommandProcessor, ZigbeeContext } from "zigbee/ZigbeeDevice"
+import { Context } from "activestate/Context"
 
 // here 3 things come together
 // 1. ZigbeeDevice: the remote device as the zigbee software stack represents it
@@ -34,6 +35,14 @@ export abstract class OnOffDevice extends Device {
 
     get off(): boolean {
         return !this.on
+    }
+
+    turnOn(this: OnOffDevice) {
+        this.updateState({ on: true })
+    }
+
+    turnOff(this: OnOffDevice) {
+        this.updateState({ on: false })
     }
 
     hasBeenOnFor(): number {

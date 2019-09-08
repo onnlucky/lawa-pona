@@ -40,7 +40,11 @@ export function findUsbDevice(): Promise<string> {
     return new Promise((resolve, reject) => {
         exec(command, (error, output) => {
             if (error) return reject(error)
-            resolve(parser(output))
+            try {
+                resolve(parser(output))
+            } catch (e) {
+                reject(e)
+            }
         })
     })
 }

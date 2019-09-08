@@ -1,6 +1,7 @@
 import { OnOffDevice, CommandProcessor } from "./Device"
 import { Light } from "./Light"
-import { bind } from "activestate/ActiveState"
+import { bind } from "activestate/Links"
+import { log } from "log"
 
 export class IkeaRemote extends OnOffDevice {
     processor = new IkeaRemoteCommandProcessor(this)
@@ -8,8 +9,8 @@ export class IkeaRemote extends OnOffDevice {
     button = "none"
 
     connectTo(sink: Light) {
-        bind(this, "on").to(sink, "on")
-        bind(this, "level").to(sink, "brightness")
+        bind(this, "on", sink, "on")
+        bind(this, "level", sink, "brightness")
     }
 
     static none = "none"
@@ -22,9 +23,6 @@ export class IkeaRemote extends OnOffDevice {
 
 class IkeaRemoteCommandProcessor extends CommandProcessor<IkeaRemote> {
     level = 0
-    // The arrow buttons select a value between 0-255.
-    // If we track that value, we can figure out which button was pressed.
-    lastCycleValue = 0
 
     stateChanged(state: IkeaRemote, external: boolean) {
         if (external) return
@@ -55,13 +53,7 @@ class IkeaRemoteCommandProcessor extends CommandProcessor<IkeaRemote> {
                 this.state.updateState({ button })
             }
         } else if (command === "commandTradfriArrowSingle") {
-            let direction = this.lastCycleValue - data.value
-            this.lastCycleValue = data.value
-            if (direction > 200) direction = -1
-            if (direction < -200) direction = 1
-            if (direction < 0) direction = -1
-            if (direction > 0) direction = 1
-            button = direction < 0 ? IkeaRemote.cycleLeft : IkeaRemote.cycleRight
+            button = data.value === 257 ? IkeaRemote.cycleLeft : IkeaRemote.cycleRight
             this.state.updateState({ button })
         }
     }
