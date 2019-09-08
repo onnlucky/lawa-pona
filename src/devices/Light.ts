@@ -18,10 +18,6 @@ export class Light extends OnOffDevice {
 }
 
 class LightCommandProcessor extends CommandProcessor<Light> {
-    constructor(light: Light) {
-        super(light)
-    }
-
     stateChanged(state: Light, external: boolean): void {
         if (!state.on) {
             this.device.sendCommand({ state: "off" })
