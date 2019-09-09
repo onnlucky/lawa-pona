@@ -28,6 +28,7 @@ function device(ieeeAddr: string): ZigbeeDevice {
 const mockZigbeeContext = {
     devicesByAddr: {} as { [key: string]: ZigbeeDevice },
     bind() {},
+    offline() {},
     getDevice(ieeeAddr: string) {
         if (this.devicesByAddr[ieeeAddr]) return this.devicesByAddr[ieeeAddr]
         return (this.devicesByAddr[ieeeAddr] = device(ieeeAddr))

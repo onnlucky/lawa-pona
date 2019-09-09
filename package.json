@@ -2,10 +2,11 @@
     "name": "lawa-pona",
     "version": "0.0.1",
     "description": "Control home automation devices.",
-    "main": "src/index.ts",
+    "main": "dist/index.js",
     "author": "Onne Gorter",
     "license": "MIT",
     "scripts": {
+        "start": "NODE_PATH=src node -r ts-node/register src/index.ts",
         "debug": "NODE_PATH=src node -r ts-node/register --inspect-brk src/index.ts",
         "dev": "NODE_PATH=src nodemon --watch '**/*.ts' --ignore '**/*.test.ts' --exec node  -r ts-node/register src/index.ts",
         "test": "yarn jest",
