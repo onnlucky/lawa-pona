@@ -4064,14 +4064,13 @@ zigbee-herdsman@^0.4.0:
     queue "^6.0.1"
     serialport "7.1.5"
 
-"zigbee-herdsman@https://github.com/onnlucky/zigbee-herdsman":
+"zigbee-herdsman@https://github.com/onnlucky/zigbee-herdsman#publish":
   version "0.6.2"
-  resolved "https://github.com/onnlucky/zigbee-herdsman#2ec0dd7847aa93d045deae601be28c86fab24ff2"
+  resolved "https://github.com/onnlucky/zigbee-herdsman#3048f87c25f1724b3467e72f16877ebce192de6e"
   dependencies:
     debug "^4.1.1"
     fast-deep-equal "^2.0.1"
     mixin-deep "^2.0.1"
-    nedb "^1.8.0"
     serialport "7.1.5"
 
 zigbee-shepherd-converters@^10:
