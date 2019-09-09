@@ -22,7 +22,7 @@ export class SmartHome extends ActiveState {
         return __current
     }
 
-    constructor(options: Partial<SmartHomeOptions>) {
+    constructor(options?: Partial<SmartHomeOptions>) {
         super()
         if (__current) throw Error("a SmartHome object was already created")
         __current = this

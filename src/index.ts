@@ -1,7 +1,7 @@
 import { rule, location, units, SmartHome } from "smarthome"
 import { Light, Dimmer, MotionSensor, Outlet, IkeaRemote } from "devices"
 
-const home = new SmartHome({ location: "NL" })
+const home = new SmartHome()
 
 rule([home], () => {
     if (!home.latenight) return
