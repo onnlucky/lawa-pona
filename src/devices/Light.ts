@@ -18,7 +18,13 @@ export class Light extends OnOffDevice {
 }
 
 class LightCommandProcessor extends CommandProcessor<Light> {
+    byDevice = false
     stateChanged(state: Light, external: boolean): void {
+        if (this.byDevice) {
+            this.byDevice = false
+            return
+        }
+
         if (!state.on) {
             this.device.sendCommand({ state: "off" })
         } else {
@@ -27,8 +33,9 @@ class LightCommandProcessor extends CommandProcessor<Light> {
     }
 
     receiveCommand(_cluster: string, command: string, data: any) {
-        if (command === "genOnOff") {
-            if (data.state === "on") {
+        if (command === "attributeReport") {
+            this.byDevice = true
+            if (data.onOff === 1) {
                 this.state.updateState({ on: true })
             } else {
                 this.state.updateState({ on: false })
