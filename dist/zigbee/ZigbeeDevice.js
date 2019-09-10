@@ -45,7 +45,7 @@ class ZigbeeDevice {
         this.mapped = mapped;
         device.__delegate = this;
         if (this.processor) {
-            log_1.command(this.ieeeAddr, "<--", "device", "online", {});
+            log_1.command(this.ieeeAddr, "<--", "device", "online", {}, device.modelID);
             this.processor.receiveCommand("device", "online", {});
         }
     }
