@@ -41,7 +41,7 @@ export class ZigbeeDevice {
         ;(device as any).__delegate = this
 
         if (this.processor) {
-            command(this.ieeeAddr, "<--", "device", "online", {})
+            command(this.ieeeAddr, "<--", "device", "online", {}, device.modelID)
             this.processor.receiveCommand("device", "online", {})
         }
     }

@@ -34,11 +34,16 @@ class LightCommandProcessor extends CommandProcessor<Light> {
 
     receiveCommand(_cluster: string, command: string, data: any) {
         if (command === "attributeReport") {
-            this.byDevice = true
-            if (data.onOff === 1) {
-                this.state.updateState({ on: true })
-            } else {
-                this.state.updateState({ on: false })
+            const state: Partial<Light> = {}
+            if (data.onOff !== undefined) {
+                state.on = data.onOff === 1
+            }
+            if (data.currentLevel !== undefined) {
+                state.brightness = data.currentLevel
+            }
+            if (Object.keys(state).length > 0) {
+                this.byDevice = true
+                this.state.updateState(state)
             }
         }
     }

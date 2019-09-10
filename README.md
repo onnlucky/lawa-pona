@@ -46,6 +46,6 @@ It works when hooked up to my laptop :) that is it. No guarantees.
 -   [ ] Turn in to a proper library.
 -   [ ] A name. Lawa pona means good/simple brain in [toki pona](http://tokipona.net).
         But it is not a nimi pona.
--   [ ] Read status of devices on start.
+-   [x] Read status of devices on start.
 -   [ ] Scenes.
 -   [ ] Web including immediate state synchronization.
