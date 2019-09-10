@@ -21,6 +21,24 @@ const findUsbDevice_1 = require("findUsbDevice");
 function sleep(seconds) {
     return new Promise(resolve => setTimeout(resolve, seconds * 1000));
 }
+const defaultConfiguration = {
+    minimumReportInterval: 3,
+    maximumReportInterval: 300,
+    reportableChange: 0
+};
+const reportingClusters = {
+    genOnOff: [Object.assign(Object.assign({ attribute: "onOff" }, defaultConfiguration), { minimumReportInterval: 0 })],
+    genLevelCtrl: [Object.assign({ attribute: "currentLevel" }, defaultConfiguration)],
+    lightingColorCtrl: [
+        Object.assign({ attribute: "colorTemperature" }, defaultConfiguration),
+        Object.assign({ attribute: "currentX" }, defaultConfiguration),
+        Object.assign({ attribute: "currentY" }, defaultConfiguration)
+    ],
+    closuresWindowCovering: [
+        Object.assign({ attribute: "currentPositionLiftPercentage" }, defaultConfiguration),
+        Object.assign({ attribute: "currentPositionTiltPercentage" }, defaultConfiguration)
+    ]
+};
 function start(context, callback) {
     return __awaiter(this, void 0, void 0, function* () {
         do {
@@ -44,7 +62,6 @@ function runController(context, callback) {
             databasePath: "data.json",
             serialPort: { path: serialPort }
         });
-        const sheperd = new SheperdCompat_1.Sheperd(controller);
         let exit;
         const exitPromise = new Promise(resolve => (exit = resolve));
         controller.on(zigbee_herdsman_1.Events.adapterDisconnected, (event) => {
@@ -53,7 +70,7 @@ function runController(context, callback) {
         });
         controller.on(zigbee_herdsman_1.Events.deviceAnnounce, (event) => {
             try {
-                log_1.debug("Events.deviceAnnounce", event.device.ieeeAddr);
+                log_1.debug("Events.deviceAnnounce", event.device.ieeeAddr, event.device.modelID);
             }
             catch (e) {
                 log_1.debug("Events.deviceAnnounce", event);
@@ -96,19 +113,22 @@ function runController(context, callback) {
             }
             const delegate = device.__delegate;
             if (delegate && delegate.processor) {
-                log_1.command(device.ieeeAddr, "<--", event.cluster, event.type, event.data);
+                log_1.command(device.ieeeAddr, "<--", event.cluster, event.type, event.data, device.modelID);
                 delegate.processor.receiveCommand(event.cluster, event.type, event.data);
                 return;
             }
             log_1.debug(device.ieeeAddr, event.cluster, event.type, event.data);
             if (!delegate) {
-                return log_1.error("device without delegate");
+                return log_1.error("device without delegate", device.ieeeAddr, device.modelID);
             }
         });
         yield controller.start();
         controller.permitJoin(true);
+        const sheperd = new SheperdCompat_1.Sheperd(controller);
+        const coordinator = controller.getDevice({ type: "Coordinator" }).getEndpoint(1);
+        const sheperdCoordinator = new SheperdCompat_1.SheperdEndpoint(coordinator);
         log_1.log("...started...");
-        controller.getDevices({}).forEach((device) => __awaiter(this, void 0, void 0, function* () {
+        const promises = controller.getDevices({}).map(device => {
             if (device.type === "Coordinator")
                 return;
             if (!device.interviewCompleted) {
@@ -121,24 +141,52 @@ function runController(context, callback) {
             }
             const mapping = getDeviceMapping(device);
             if (!mapping) {
-                log_1.error("found a configured but unknown device:", device.modelID);
+                log_1.error("found a configured but unknown device:", device.ieeeAddr, device.modelID);
                 log_1.debug(device);
                 return;
             }
-            addDevice(device, mapping);
-            log_1.debug("pinging:", device.ieeeAddr);
-            try {
-                log_1.log("pinging device:", device.ieeeAddr, device.modelID);
-                yield device.ping();
-            }
-            catch (e) {
-                log_1.debug("error pinging:", device.ieeeAddr, e);
-            }
-        }));
+            return addDevice(device, mapping);
+        });
+        yield Promise.all(promises);
         log_1.log("...all pinged");
         callback();
+        function readReportOrPing(device) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const delegate = device.__delegate;
+                const processor = delegate ? delegate.processor : null;
+                let setupReport = false;
+                try {
+                    device.getEndpoints().forEach((endpoint) => __awaiter(this, void 0, void 0, function* () {
+                        Object.entries(reportingClusters).forEach(([cluster, config]) => __awaiter(this, void 0, void 0, function* () {
+                            if (!endpoint.supportsInputCluster(cluster))
+                                return;
+                            setupReport = true;
+                            if (processor) {
+                                log_1.debug("requesting current status:", device.ieeeAddr, device.modelID);
+                                const result = yield endpoint.read(cluster, config.map(c => c.attribute));
+                                log_1.command(device.ieeeAddr, "<--", cluster, "attributeReport", result, device.modelID);
+                                processor.receiveCommand(cluster, "attributeReport", result);
+                            }
+                            log_1.debug("setting up reporting:", device.ieeeAddr, device.modelID);
+                            yield endpoint.bind(cluster, coordinator);
+                            yield endpoint.configureReporting(cluster, config);
+                        }));
+                    }));
+                    if (setupReport)
+                        return;
+                    if (device["powerSource"] === "Battery")
+                        return;
+                    log_1.debug("pinging device:", device.ieeeAddr, device.modelID);
+                    yield device.ping();
+                }
+                catch (e) {
+                    log_1.error("error", setupReport ? "setting up reporting" : "pinging", device.ieeeAddr, device.modelID);
+                }
+            });
+        }
         function addDevice(device, mapped) {
             context.getDevice(device.ieeeAddr).setDevice(device, mapped);
+            return readReportOrPing(device);
         }
         function getDeviceMapping(device) {
             let model = device.modelID;
@@ -149,33 +197,31 @@ function runController(context, callback) {
         }
         function configureDevice(device) {
             if (!device.interviewCompleted) {
-                log_1.debug("still interviewing...");
+                log_1.debug(device.ieeeAddr, "still interviewing...");
                 return;
             }
             const mapped = getDeviceMapping(device);
             if (!mapped) {
-                log_1.error("configuration failed: unknown device:", device.modelID);
+                log_1.error("configuration failed: unknown device:", device.ieeeAddr, device.modelID);
                 log_1.debug(device);
                 return;
             }
             if (device.meta.configured) {
-                log_1.debug("already configured...");
+                log_1.debug(device.ieeeAddr, "already configured...");
                 return;
             }
             if (!mapped.configure) {
-                log_1.debug("trivial configuration...");
+                log_1.debug(device.ieeeAddr, "trivial configuration...");
                 device.meta.configured = true;
                 device.save();
                 log_1.log("configured device:", device.ieeeAddr, device.modelID);
                 addDevice(device, mapped);
                 return;
             }
-            const coordinator = controller.getDevice({ type: "Coordinator" });
-            const coordinatorEndpoint = new SheperdCompat_1.SheperdEndpoint(coordinator.getEndpoint(1));
-            log_1.debug("doing configuration...");
-            mapped.configure(device.ieeeAddr, sheperd, coordinatorEndpoint, (ok, error) => {
+            log_1.debug(device.ieeeAddr, "doing configuration...");
+            mapped.configure(device.ieeeAddr, sheperd, sheperdCoordinator, (ok, error) => {
                 if (!ok) {
-                    error("configuration failed:", error);
+                    error(device.ieeeAddr, "configuration failed:", error);
                     device.meta.configured = false;
                     device.save();
                     return;

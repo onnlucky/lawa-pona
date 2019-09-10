@@ -24,7 +24,15 @@ class Light extends Device_1.OnOffDevice {
 }
 exports.Light = Light;
 class LightCommandProcessor extends Device_1.CommandProcessor {
+    constructor() {
+        super(...arguments);
+        this.byDevice = false;
+    }
     stateChanged(state, external) {
+        if (this.byDevice) {
+            this.byDevice = false;
+            return;
+        }
         if (!state.on) {
             this.device.sendCommand({ state: "off" });
         }
@@ -33,12 +41,17 @@ class LightCommandProcessor extends Device_1.CommandProcessor {
         }
     }
     receiveCommand(_cluster, command, data) {
-        if (command === "genOnOff") {
-            if (data.state === "on") {
-                this.state.updateState({ on: true });
+        if (command === "attributeReport") {
+            const state = {};
+            if (data.onOff !== undefined) {
+                state.on = data.onOff === 1;
             }
-            else {
-                this.state.updateState({ on: false });
+            if (data.currentLevel !== undefined) {
+                state.brightness = data.currentLevel;
+            }
+            if (Object.keys(state).length > 0) {
+                this.byDevice = true;
+                this.state.updateState(state);
             }
         }
     }
