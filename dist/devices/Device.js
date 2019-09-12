@@ -11,7 +11,7 @@ class CommandProcessor {
     constructor(state) {
         this.state = state;
         state._meta.listener = this;
-        this.device = ZigbeeDevice_1.ZigbeeContext.current().getDevice(state.ieeeAddr);
+        this.device = ZigbeeDevice_1.ZigbeeContext.current().getDevice(state.id);
         this.device.setCommandProcessor(this);
     }
     receiveCommand(_cluster, _command, _data) { }
@@ -19,8 +19,7 @@ class CommandProcessor {
 exports.CommandProcessor = CommandProcessor;
 class Device extends ActiveState_1.ActiveState {
     constructor(ieeeAddr, name) {
-        super();
-        this.ieeeAddr = ieeeAddr;
+        super(ieeeAddr);
         this.name = name;
     }
 }
@@ -30,6 +29,7 @@ class OnOffDevice extends Device {
         super(...arguments);
         /** Property 'on' tells if a device os turned on or off. */
         this.on = false;
+        this.lastChange = 0;
     }
     get off() {
         return !this.on;

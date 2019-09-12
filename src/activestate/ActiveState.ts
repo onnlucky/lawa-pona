@@ -6,8 +6,9 @@ import { Link, Rule } from "./Links"
 // rules update the same object, only the last applied update will actually be
 // applied.
 
-export type StateUpdateValue = null | boolean | number | string | StateUpdate
-export type StateUpdate = { [key: string]: StateUpdateValue }
+export type StateDataValue = null | boolean | number | string | StateData
+export type StateData = { [key: string]: StateDataValue }
+export type StateUpdate = StateData & { id: string }
 
 export interface ActiveStateListener {
     /** The method of a state listener that gets called when this state has
@@ -37,8 +38,20 @@ export function hasOwnProperty(object: any, key: string) {
     return __hasOwnProperty.call(object, key)
 }
 
+const first = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const other = first + "0123456789"
+function randomID(): string {
+    return (
+        first[(Math.random() * first.length) | 0] +
+        other[(Math.random() * first.length) | 0] +
+        other[(Math.random() * first.length) | 0] +
+        other[(Math.random() * first.length) | 0] +
+        other[(Math.random() * first.length) | 0] +
+        other[(Math.random() * first.length) | 0]
+    )
+}
+
 export class MetaState implements TimerObject {
-    context: Context
     links: Link[] = []
     listener: ActiveStateListener | null = null
     scheduled: number = -1
@@ -51,11 +64,14 @@ export class MetaState implements TimerObject {
 
     constructor(public state: ActiveState) {}
 
-    reset(): KeyValue | null {
-        const update = this.update
+    reset(): void {
         this.start = null
         this.update = null
-        return update
+    }
+
+    snapshot(): StateUpdate {
+        const { _meta, forTime, byUser, lastChange, processor, ...data } = this.state as any
+        return (data as unknown) as StateUpdate
     }
 
     timeoutExpired() {
@@ -84,9 +100,28 @@ export class MetaState implements TimerObject {
 export class ActiveState {
     _meta = new MetaState(this)
 
+    id: string
     lastChange = 0
     byUser = false
     forTime = 0
+
+    constructor(id?: string) {
+        const context = Context.getCurrent()
+        if (!context) {
+            this.id = id || randomID()
+            return
+        }
+
+        if (id) {
+            if (context.getStateById(id)) throw Error("id already exists: " + id)
+        } else {
+            do {
+                id = randomID()
+            } while (context.getStateById(id))
+        }
+        this.id = id
+        context.addState(this)
+    }
 
     hasBeen(key: keyof this, { forTime }: { forTime: number }): boolean {
         const rule = Rule.current()

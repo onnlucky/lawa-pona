@@ -1,0 +1,90 @@
+<title>Home Control</title>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<style>
+    body,
+    html {
+        margin: 0;
+        padding: 0;
+        user-select: none;
+        font: 18px sans-serif;
+    }
+    .device {
+        text-align: center;
+        padding: 0.5em;
+        margin: 2px;
+    }
+    .device.on {
+        background: green;
+    }
+    .device.off {
+        background: grey;
+    }
+</style>
+<div id="app">
+    <p v-if="!connected">Not Connected...</p>
+    <div>
+        <div
+            v-for="device in devices"
+            v-bind:key="device.id"
+            v-on:click="toggle(device)"
+            :class="device.on ? 'device on' : 'device off'"
+        >
+            {{ device.name }}
+        </div>
+    </div>
+</div>
+<script>
+    const app = new Vue({
+        el: "#app",
+        data: {
+            connected: false,
+            devices: []
+        },
+        methods: {
+            toggle: device => {
+                device.on = !device.on
+                ws.send(JSON.stringify([{ id: device.id, on: device.on }]))
+            }
+        }
+    })
+
+    let first = true
+    const ws = new WebSocket("ws://localhost:8080/ws-api")
+    ws.onopen = () => {
+        app.connected = true
+    }
+    ws.onclose = () => {
+        let first = true
+        app.connected = false
+    }
+    ws.onerror = event => {
+        let first = true
+        console.log(event)
+        app.connected = false
+    }
+    ws.onmessage = event => {
+        const msg = JSON.parse(event.data)
+        if (msg.error) return console.log("error:", msg.error)
+
+        if (first) {
+            first = false
+            msg.forEach(d => {
+                if (!d.id) return
+                if (d.on === undefined) return
+                if (!d.name) return
+                if (d.name.toLowerCase().indexOf("light") < 0) return
+                app.devices.push(d)
+            })
+        } else {
+            msg.forEach(u => {
+                const device = app.devices.find(d => d.id === u.id)
+                if (!device) return
+                Object.keys(u).forEach(key => {
+                    if (key === "id") return
+                    console.log("update:", device.id, key, u[key], "old:", device[key])
+                    device[key] = u[key]
+                })
+            })
+        }
+    }
+</script>

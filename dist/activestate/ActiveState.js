@@ -27,6 +27,16 @@ function hasOwnProperty(object, key) {
     return __hasOwnProperty.call(object, key);
 }
 exports.hasOwnProperty = hasOwnProperty;
+const first = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const other = first + "0123456789";
+function randomID() {
+    return (first[(Math.random() * first.length) | 0] +
+        other[(Math.random() * first.length) | 0] +
+        other[(Math.random() * first.length) | 0] +
+        other[(Math.random() * first.length) | 0] +
+        other[(Math.random() * first.length) | 0] +
+        other[(Math.random() * first.length) | 0]);
+}
 class MetaState {
     constructor(state) {
         this.state = state;
@@ -40,10 +50,12 @@ class MetaState {
         this.update = null;
     }
     reset() {
-        const update = this.update;
         this.start = null;
         this.update = null;
-        return update;
+    }
+    snapshot() {
+        const _a = this.state, { _meta, forTime, byUser, lastChange, processor } = _a, data = __rest(_a, ["_meta", "forTime", "byUser", "lastChange", "processor"]);
+        return data;
     }
     timeoutExpired() {
         this.state.timeoutExpired();
@@ -68,11 +80,27 @@ class MetaState {
 }
 exports.MetaState = MetaState;
 class ActiveState {
-    constructor() {
+    constructor(id) {
         this._meta = new MetaState(this);
         this.lastChange = 0;
         this.byUser = false;
         this.forTime = 0;
+        const context = Context_1.Context.getCurrent();
+        if (!context) {
+            this.id = id || randomID();
+            return;
+        }
+        if (id) {
+            if (context.getStateById(id))
+                throw Error("id already exists: " + id);
+        }
+        else {
+            do {
+                id = randomID();
+            } while (context.getStateById(id));
+        }
+        this.id = id;
+        context.addState(this);
     }
     hasBeen(key, { forTime }) {
         const rule = Links_1.Rule.current();

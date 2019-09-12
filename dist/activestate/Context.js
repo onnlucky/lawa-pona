@@ -11,11 +11,22 @@ class Context {
         this.debug = false;
         this.updateTimeInterval = null;
         this.anyStateChanges = false;
+        this.changeListeners = [];
+        this.states = [];
         this.updateTime = () => {
             this.setTime();
             this.runTimers();
         };
         this.setTime();
+    }
+    addChangeListener(o) {
+        this.changeListeners.push(o);
+    }
+    removeChangeListener(o) {
+        const at = this.changeListeners.indexOf(o);
+        if (at < 0)
+            return;
+        this.changeListeners.splice(at, 1);
     }
     setTime() {
         this.time = Date.now() / 1000;
@@ -44,6 +55,17 @@ class Context {
         if (!__currentContext)
             throw Error("assert error: no context is bound");
         return __currentContext;
+    }
+    static getCurrent() {
+        return __currentContext;
+    }
+    addState(state) {
+        if (!state.id)
+            throw Error("state must have id");
+        this.states.push(state);
+    }
+    getStateById(id) {
+        return this.states.find(state => state.id === id);
     }
     log(...args) {
         if (!this.debug)
@@ -112,15 +134,16 @@ class Context {
             timer.timeoutExpired(this);
         }
         this.log("-[", this.tick, "]- run changes");
-        for (let i = 0; i < this.scheduled.length; i++) {
-            const source = this.scheduled[i];
+        const scheduled = this.scheduled;
+        for (let i = 0; i < scheduled.length; i++) {
+            const source = scheduled[i];
             source._meta.links.forEach(link => link.run(this, source));
         }
-        this.log("-[", this.tick, "]- post processing:", this.scheduled.length);
+        this.log("-[", this.tick, "]- post processing:", scheduled.length);
         this.setTime();
-        for (let i = 0, il = this.scheduled.length; i < il; i++) {
-            const source = this.scheduled[i];
-            const update = source._meta.reset();
+        for (let i = 0, il = scheduled.length; i < il; i++) {
+            const source = scheduled[i];
+            const update = source._meta.update;
             if (update) {
                 source.lastChange = this.time;
                 source.forTime = 0;
@@ -129,17 +152,23 @@ class Context {
                 source.postProcess(update);
             }
         }
-        this.log("-[", this.tick, "]- calling listeners:", this.scheduled.length);
-        for (let i = 0, il = this.scheduled.length; i < il; i++) {
-            const source = this.scheduled[i];
+        this.log("-[", this.tick, "]- calling listeners:", scheduled.length);
+        for (let i = 0, il = scheduled.length; i < il; i++) {
+            const source = scheduled[i];
             const listener = source._meta.listener;
             if (!listener)
                 continue;
             listener.stateChanged(source, source.byUser);
             source.byUser = false;
         }
-        this.timers.sort((a, b) => a._timeout - b._timeout);
+        for (let i = 0, il = this.changeListeners.length; i < il; i++) {
+            this.changeListeners[i].onStatesChanged(scheduled);
+        }
+        for (let i = 0, il = scheduled.length; i < il; i++) {
+            scheduled[i]._meta.reset();
+        }
         this.scheduled = [];
+        this.timers.sort((a, b) => a._timeout - b._timeout);
         this.running = false;
         this.log("-[", this.tick, "]- done; millis:", Date.now() - start, "\n\n");
     }

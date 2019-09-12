@@ -57,7 +57,7 @@ test("space", () => {
     expect(deviceCommand).toHaveBeenCalledTimes(1)
     expect(deviceCommand).toHaveBeenCalledWith({ brightness: 255 })
 
-    light.processor.receiveCommand("genOnOff", "genOnOff", { state: "off" })
+    light.processor.receiveCommand("genOnOff", "attributeReport", { onOff: 0 })
     expect(light.on).toBeFalsy()
 
     light.setState("on", { forTime: 10 })

@@ -14,6 +14,7 @@ var Links_1 = require("activestate/Links");
 exports.rule = Links_1.rule;
 const units = __importStar(require("./units"));
 exports.units = units;
+const sync_1 = require("remote/sync");
 let __current = null;
 class SmartHome extends ActiveState_1.ActiveState {
     constructor(options) {
@@ -22,8 +23,9 @@ class SmartHome extends ActiveState_1.ActiveState {
         if (__current)
             throw Error("a SmartHome object was already created");
         __current = this;
-        new Context_1.Context().bind();
+        const context = new Context_1.Context().bind();
         new ZigbeeDevice_1.ZigbeeContext().bind();
+        new sync_1.SyncServer(context).serve();
     }
     static current() {
         if (!__current)

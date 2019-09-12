@@ -1,5 +1,9 @@
-import { ActiveState, MetaState } from "./ActiveState"
+import { ActiveState, MetaState, ActiveStateListener } from "./ActiveState"
 import { Link } from "./Links"
+
+export interface ActiveStateChangeListener {
+    onStatesChanged(state: ActiveState[]): void
+}
 
 export interface TimerObject {
     _timeout: number
@@ -18,8 +22,21 @@ export class Context {
     updateTimeInterval: any = null
     anyStateChanges = false
 
+    changeListeners: ActiveStateChangeListener[] = []
+    states: ActiveState[] = []
+
     constructor() {
         this.setTime()
+    }
+
+    addChangeListener(o: ActiveStateChangeListener) {
+        this.changeListeners.push(o)
+    }
+
+    removeChangeListener(o: ActiveStateChangeListener) {
+        const at = this.changeListeners.indexOf(o)
+        if (at < 0) return
+        this.changeListeners.splice(at, 1)
     }
 
     setTime() {
@@ -51,6 +68,19 @@ export class Context {
     static current() {
         if (!__currentContext) throw Error("assert error: no context is bound")
         return __currentContext
+    }
+
+    static getCurrent() {
+        return __currentContext
+    }
+
+    addState(state: ActiveState) {
+        if (!state.id) throw Error("state must have id")
+        this.states.push(state)
+    }
+
+    getStateById(id: string) {
+        return this.states.find(state => state.id === id)
     }
 
     log(...args: any[]) {
@@ -123,17 +153,19 @@ export class Context {
             const timer = timeouts[i]
             timer.timeoutExpired(this)
         }
+
         this.log("-[", this.tick, "]- run changes")
-        for (let i = 0; i < this.scheduled.length; i++) {
-            const source = this.scheduled[i]
+        const scheduled = this.scheduled
+        for (let i = 0; i < scheduled.length; i++) {
+            const source = scheduled[i]
             source._meta.links.forEach(link => link.run(this, source))
         }
-        this.log("-[", this.tick, "]- post processing:", this.scheduled.length)
+        this.log("-[", this.tick, "]- post processing:", scheduled.length)
 
         this.setTime()
-        for (let i = 0, il = this.scheduled.length; i < il; i++) {
-            const source = this.scheduled[i]
-            const update = source._meta.reset()
+        for (let i = 0, il = scheduled.length; i < il; i++) {
+            const source = scheduled[i]
+            const update = source._meta.update
             if (update) {
                 source.lastChange = this.time
                 source.forTime = 0
@@ -142,16 +174,23 @@ export class Context {
                 source.postProcess(update)
             }
         }
-        this.log("-[", this.tick, "]- calling listeners:", this.scheduled.length)
-        for (let i = 0, il = this.scheduled.length; i < il; i++) {
-            const source = this.scheduled[i]
+        this.log("-[", this.tick, "]- calling listeners:", scheduled.length)
+        for (let i = 0, il = scheduled.length; i < il; i++) {
+            const source = scheduled[i]
             const listener = source._meta.listener
             if (!listener) continue
             listener.stateChanged(source, source.byUser)
             source.byUser = false
         }
-        this.timers.sort((a, b) => a._timeout - b._timeout)
+        for (let i = 0, il = this.changeListeners.length; i < il; i++) {
+            this.changeListeners[i].onStatesChanged(scheduled)
+        }
+        for (let i = 0, il = scheduled.length; i < il; i++) {
+            scheduled[i]._meta.reset()
+        }
+
         this.scheduled = []
+        this.timers.sort((a, b) => a._timeout - b._timeout)
         this.running = false
         this.log("-[", this.tick, "]- done; millis:", Date.now() - start, "\n\n")
     }
