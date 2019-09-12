@@ -1,6 +1,6 @@
 import { Context, ActiveStateChangeListener } from "../activestate/Context"
 import { ActiveState, hasOwnProperty, StateUpdate } from "../activestate/ActiveState"
-import { App } from "uWebSockets.js"
+// import { App } from "uWebSockets.js"
 import fs from "fs"
 
 // fetch("/") -> all devices
@@ -74,6 +74,7 @@ export class SyncServer implements ActiveStateChangeListener {
     }
 
     serve(port = 8080) {
+        /*
         App()
             .ws("/ws-api", {
                 maxPayloadLength: 5 * 1024 * 1024,
@@ -111,5 +112,6 @@ export class SyncServer implements ActiveStateChangeListener {
                 if (!ok) return console.log("opening websocket failed")
                 console.log("opened:", port)
             })
+            */
     }
 }

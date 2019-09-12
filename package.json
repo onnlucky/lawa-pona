@@ -6,7 +6,7 @@
     "author": "Onne Gorter",
     "license": "MIT",
     "scripts": {
-        "start": "NODE_PATH=dist node dist/index.js",
+        "start": "NODE_PATH=src node dist/index.js",
         "debug": "NODE_PATH=src node -r ts-node/register --inspect-brk src/index.ts",
         "dev": "NODE_PATH=src nodemon --watch '**/*.ts' --ignore '**/*.test.ts' --exec node  -r ts-node/register src/index.ts",
         "test": "yarn jest",
@@ -23,7 +23,6 @@
     },
     "dependencies": {
         "debug": "^4.1.1",
-        "uWebSockets.js": "uNetworking/uWebSockets.js#v15.11.0",
         "zigbee-herdsman": "https://github.com/onnlucky/zigbee-herdsman#publish",
         "zigbee-shepherd-converters": "^10"
     },
