@@ -4,6 +4,7 @@ import { Device, Light } from "devices"
 import { Context } from "activestate/Context"
 export { rule } from "activestate/Links"
 import * as units from "./units"
+import { SyncServer } from "remote/sync"
 
 export { units }
 
@@ -26,8 +27,9 @@ export class SmartHome extends ActiveState {
         super()
         if (__current) throw Error("a SmartHome object was already created")
         __current = this
-        new Context().bind()
+        const context = new Context().bind()
         new ZigbeeContext().bind()
+        new SyncServer(context).serve()
     }
 
     forEachDevice(body: (device: Device) => void) {}

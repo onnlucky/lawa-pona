@@ -12,7 +12,7 @@ export abstract class CommandProcessor<T extends Device> implements ActiveStateL
 
     constructor(public state: T) {
         state._meta.listener = this
-        this.device = ZigbeeContext.current().getDevice(state.ieeeAddr)
+        this.device = ZigbeeContext.current().getDevice(state.id)
         this.device.setCommandProcessor(this)
     }
 
@@ -24,14 +24,15 @@ export abstract class CommandProcessor<T extends Device> implements ActiveStateL
 export abstract class Device extends ActiveState {
     processor: CommandProcessor<Device>
 
-    constructor(public ieeeAddr: string, public name?: string) {
-        super()
+    constructor(ieeeAddr: string, public name?: string) {
+        super(ieeeAddr)
     }
 }
 
 export abstract class OnOffDevice extends Device {
     /** Property 'on' tells if a device os turned on or off. */
     on = false
+    lastChange = 0
 
     get off(): boolean {
         return !this.on
