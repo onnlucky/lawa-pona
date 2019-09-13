@@ -1,10 +1,9 @@
-import { Context, ActiveStateChangeListener } from "../activestate/Context"
-import { ActiveState, hasOwnProperty, StateUpdate } from "../activestate/ActiveState"
-// import { App } from "uWebSockets.js"
+import WebSocket from "ws"
+import http from "http"
 import fs from "fs"
 
-// fetch("/") -> all devices
-// fetch("/", {method: "POST", body: JSON.stringify([{id: "0x000d6f00137466d0", on: true}]) })
+import { Context, ActiveStateChangeListener } from "../activestate/Context"
+import { ActiveState, hasOwnProperty, StateUpdate } from "../activestate/ActiveState"
 
 function diff(source: ActiveState): StateUpdate | null {
     const start = source._meta.start
@@ -74,44 +73,45 @@ export class SyncServer implements ActiveStateChangeListener {
     }
 
     serve(port = 8080) {
-        /*
-        App()
-            .ws("/ws-api", {
-                maxPayloadLength: 5 * 1024 * 1024,
-                idleTimeout: 60 * 60 * 24 * 7,
-                open: (ws, req) => {
-                    console.log("ws open", req.getUrl())
-                    ws.connection = new Connection(this.context, this, ws).start()
-                },
-                message: (ws, message) => {
-                    const connection = ws.connection as Connection
-                    const data = JSON.parse(Buffer.from(message).toString("utf8"))
-                    if (!Array.isArray(data)) {
-                        ws.send(JSON.stringify({ error: "expected an array" }))
-                        return
-                    }
-                    connection.receive(data)
-                },
-                close: (ws, code, message) => {
-                    console.log("ws closed", code, message)
-                    const connection = ws.connection as Connection
-                    connection.close()
+        const server = http.createServer((req, res) => {
+            console.log("http", req.method, req.url)
+            res.writeHead(200, { "Content-Type": "text/html" })
+            let data: string
+            try {
+                data = fs.readFileSync("frontend/index.html", "utf8")
+            } catch (e) {
+                data = "<p>error: " + e.toString() + "</p>"
+            }
+            res.end(data)
+        })
+        const wss = new WebSocket.Server({ server })
+        wss.on("connection", ws => {
+            console.log("ws open", ws.url)
+            const connection = new Connection(this.context, this, ws).start()
+            ws.on("message", message => {
+                console.log("received: %s", message)
+                const data = JSON.parse(message.toString("utf8"))
+                if (!Array.isArray(data)) {
+                    ws.send(JSON.stringify({ error: "expected an array" }))
+                    return
                 }
+                connection.receive(data)
             })
-            .get("/*", (res, req) => {
-                res.writeHeader("Content-Type", "text/html")
-                let data: string
-                try {
-                    data = fs.readFileSync("frontend/index.html", "utf8")
-                } catch (e) {
-                    data = "<p>error: " + e.toString() + "</p>"
-                }
-                res.end(data)
+            ws.on("close", (code, reason) => {
+                console.log("ws closed", code, reason)
+                connection.close()
             })
-            .listen(port, ok => {
-                if (!ok) return console.log("opening websocket failed")
-                console.log("opened:", port)
+            ws.on("error", error => {
+                console.log("ws error:", error)
+                connection.close()
             })
-            */
+        })
+        wss.on("error", error => {
+            console.log("ws error:", error)
+        })
+        server.on("error", error => {
+            console.log("http error:", error)
+        })
+        server.listen(port)
     }
 }
