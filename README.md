@@ -48,4 +48,7 @@ It works when hooked up to my laptop :) that is it. No guarantees.
         But it is not a nimi pona.
 -   [x] Read status of devices on start.
 -   [ ] Scenes.
--   [ ] Web including immediate state synchronization.
+-   [ ] Brightness control in app.
+-   [x] Web including immediate state synchronization.
+-   [ ] Battery and offline status.
+-   [ ] Locations, cards in app per floor, sections per room.
