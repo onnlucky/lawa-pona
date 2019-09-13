@@ -1,4 +1,5 @@
 <title>Home Control</title>
+<meta name="viewport" content="width = device-width" />
 <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
 <style>
     body,
@@ -8,10 +9,18 @@
         user-select: none;
         font: 18px sans-serif;
     }
+    .cards {
+        padding: 5px;
+    }
     .device {
+        border-radius: 5px;
         text-align: center;
         padding: 0.5em;
         margin: 2px;
+    }
+    .allOff {
+        background: lightcoral;
+        width: 25%;
     }
     .device.on {
         background: green;
@@ -22,7 +31,10 @@
 </style>
 <div id="app">
     <p v-if="!connected">Not Connected...</p>
-    <div>
+    <div class="cards vbox">
+        <div class="header hbox">
+            <div class="device allOff" v-on:click="allOff()">All Off</div>
+        </div>
         <div
             v-for="device in devices"
             v-bind:key="device.id"
@@ -34,6 +46,15 @@
     </div>
 </div>
 <script>
+    const host = location.protocol.startsWith("file") ? "localhost:8080" : location.host
+    const wsUrl = "ws://" + host + "/ws-api"
+    let ws = null
+
+    function send(msg) {
+        if (!ws) return
+        ws.send(JSON.stringify(msg))
+    }
+
     const app = new Vue({
         el: "#app",
         data: {
@@ -43,48 +64,61 @@
         methods: {
             toggle: device => {
                 device.on = !device.on
-                ws.send(JSON.stringify([{ id: device.id, on: device.on }]))
+                send([{ id: device.id, on: device.on }])
+            },
+            allOff: () => {
+                send(app.devices.map(d => ({ id: d.id, on: false })))
+                app.devices.forEach(d => (d.on = false))
             }
         }
     })
 
-    let first = true
-    const ws = new WebSocket("ws://" + location.host + "/ws-api")
-    ws.onopen = () => {
-        app.connected = true
-    }
-    ws.onclose = () => {
-        let first = true
-        app.connected = false
-    }
-    ws.onerror = event => {
-        let first = true
-        console.log(event)
-        app.connected = false
-    }
-    ws.onmessage = event => {
-        const msg = JSON.parse(event.data)
-        if (msg.error) return console.log("error:", msg.error)
+    function reconnect() {
+        if (ws) return
 
-        if (first) {
-            first = false
-            msg.forEach(d => {
-                if (!d.id) return
-                if (d.on === undefined) return
-                if (!d.name) return
-                if (d.name.toLowerCase().indexOf("light") < 0) return
-                app.devices.push(d)
-            })
-        } else {
-            msg.forEach(u => {
-                const device = app.devices.find(d => d.id === u.id)
-                if (!device) return
-                Object.keys(u).forEach(key => {
-                    if (key === "id") return
-                    console.log("update:", device.id, key, u[key], "old:", device[key])
-                    device[key] = u[key]
+        let first = true
+        ws = new WebSocket(wsUrl)
+        ws.onopen = () => {
+            app.connected = true
+        }
+        ws.onclose = () => {
+            let first = true
+            app.connected = false
+            ws = null
+        }
+        ws.onerror = event => {
+            let first = true
+            console.log(event)
+            app.connected = false
+            ws = null
+        }
+        ws.onmessage = event => {
+            const msg = JSON.parse(event.data)
+            if (msg.error) return console.log("error:", msg.error)
+
+            if (first) {
+                first = false
+                msg.forEach(d => {
+                    if (!d.id) return
+                    if (d.on === undefined) return
+                    if (!d.name) return
+                    if (d.name.toLowerCase().indexOf("light") < 0) return
+                    app.devices.push(d)
                 })
-            })
+            } else {
+                msg.forEach(u => {
+                    const device = app.devices.find(d => d.id === u.id)
+                    if (!device) return
+                    Object.keys(u).forEach(key => {
+                        if (key === "id") return
+                        console.log("update:", device.id, key, u[key], "old:", device[key])
+                        device[key] = u[key]
+                    })
+                })
+            }
         }
     }
+
+    setInterval(reconnect, 5000)
+    setTimeout(reconnect)
 </script>
