@@ -13,10 +13,14 @@
         padding: 5px;
     }
     .device {
+        touch-action: none;
+        position: relative;
         border-radius: 5px;
         text-align: center;
         padding: 0.5em;
         margin: 2px;
+        overflow: hidden;
+        background: grey;
     }
     .allOff {
         background: lightcoral;
@@ -25,8 +29,45 @@
     .device.on {
         background: green;
     }
-    .device.off {
-        background: grey;
+    .allOff {
+        background: lightcoral;
+        width: 25%;
+    }
+
+    .brightnessControl {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        display: flex;
+        flex-direction: row;
+    }
+    .brightnessControl .control {
+        width: 15%;
+        padding: 0.5em;
+    }
+    .brightnessControl .indicator {
+        /* pointer-events: none; */
+        flex-grow: 1;
+        position: relative;
+    }
+    .brightnessControl .innerIndicator {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        background: lightgray;
+    }
+    .on .brightnessControl .innerIndicator {
+        background: lightgray;
+    }
+
+    .deviceName {
+        position: relative;
+        /* z-index: 1; */
+        pointer-events: none;
     }
 </style>
 <div id="app">
@@ -39,9 +80,19 @@
             v-for="device in devices"
             v-bind:key="device.id"
             v-on:click="toggle(device)"
-            :class="device.on ? 'device on' : 'device off'"
+            :class="{device: true, on: device.on}"
         >
-            {{ device.name }}
+            <div v-if="device.brightness >= 0" class="brightnessControl">
+                <div class="control" v-on:click="brightnessDown(device, $event)">-</div>
+                <div class="indicator">
+                    <div
+                        class="innerIndicator"
+                        v-bind:style="{width: (100 - device.brightness / 255 * 100) + '%'}"
+                    ></div>
+                </div>
+                <div class="control" v-on:click="brightnessUp(device, $event)">+</div>
+            </div>
+            <div class="deviceName">{{ device.name }}</div>
         </div>
     </div>
 </div>
@@ -55,6 +106,11 @@
         ws.send(JSON.stringify(msg))
     }
 
+    function sendBrightness(device) {
+        device.on = device.brightness > 0
+        send([{ id: device.id, on: device.on, brightness: device.brightness }])
+    }
+
     const app = new Vue({
         el: "#app",
         data: {
@@ -65,6 +121,16 @@
             toggle: device => {
                 device.on = !device.on
                 send([{ id: device.id, on: device.on }])
+            },
+            brightnessDown: (device, event) => {
+                device.brightness = Math.max(0, device.brightness - 25)
+                sendBrightness(device)
+                event.stopPropagation()
+            },
+            brightnessUp: (device, event) => {
+                device.brightness = Math.min(255, device.brightness + 25)
+                sendBrightness(device)
+                event.stopPropagation()
             },
             allOff: () => {
                 send(app.devices.map(d => ({ id: d.id, on: false })))
@@ -104,6 +170,7 @@
                     if (d.on === undefined) return
                     if (!d.name) return
                     if (d.name.toLowerCase().indexOf("light") < 0) return
+                    console.log(d)
                     app.devices.push(d)
                 })
             } else {

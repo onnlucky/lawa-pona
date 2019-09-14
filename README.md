@@ -52,3 +52,5 @@ It works when hooked up to my laptop :) that is it. No guarantees.
 -   [x] Web including immediate state synchronization.
 -   [ ] Battery and offline status.
 -   [ ] Locations, cards in app per floor, sections per room.
+-   [ ] Difference in controller coming online, device coming online, user making changes,
+        devices reporting changes.
