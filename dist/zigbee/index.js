@@ -86,16 +86,16 @@ function runController(context, callback) {
             }
         });
         controller.on(zigbee_herdsman_1.Events.deviceInterview, (event) => {
-            log_1.debug("Events.deviceInterview", event.device.ieeeAddr, event.device.getEndpoints().length);
+            log_1.debug("Events.deviceInterview", event.device.ieeeAddr, event.device.getEndpoints().length, event.device.modelID);
             configureDevice(event.device);
         });
         controller.on(zigbee_herdsman_1.Events.deviceJoined, (event) => {
-            log_1.debug("Events.deviceJoined", event.device.ieeeAddr);
+            log_1.debug("Events.deviceJoined", event.device.ieeeAddr, event.device.modelID);
         });
         controller.on(zigbee_herdsman_1.Events.deviceLeave, (event) => {
-            log_1.debug("Events.deviceLeave", event.ieeeAddr);
             triedConfiguring.delete(event.ieeeAddr);
             const device = controller.getDeviceByAddress(event.ieeeAddr);
+            log_1.debug("Events.deviceLeave", event.ieeeAddr, device ? device.modelID : "unknown");
             if (device) {
                 device.removeFromDatabase();
             }
@@ -104,7 +104,7 @@ function runController(context, callback) {
         controller.on(zigbee_herdsman_1.Events.message, (event) => {
             const device = event.device;
             if (!device.meta.configured) {
-                log_1.debug("Events.message", event.type, event.device.ieeeAddr, event.device.getEndpoints().length);
+                log_1.debug("Events.message", event.type, event.device.ieeeAddr, event.device.getEndpoints().length, event.device.modelID);
                 if (!triedConfiguring.has(device.ieeeAddr)) {
                     triedConfiguring.add(device.ieeeAddr);
                     configureDevice(event.device);
@@ -161,6 +161,9 @@ function runController(context, callback) {
                             if (!endpoint.supportsInputCluster(cluster))
                                 return;
                             setupReport = true;
+                            // seems to get confused if we setup reportings
+                            if (device.modelID === "ZG9101SAC-HP")
+                                return;
                             if (processor) {
                                 log_1.debug("requesting current status:", device.ieeeAddr, device.modelID);
                                 const result = yield endpoint.read(cluster, config.map(c => c.attribute));
@@ -197,7 +200,7 @@ function runController(context, callback) {
         }
         function configureDevice(device) {
             if (!device.interviewCompleted) {
-                log_1.debug(device.ieeeAddr, "still interviewing...");
+                log_1.debug(device.ieeeAddr, "still interviewing...", device.modelID);
                 return;
             }
             const mapped = getDeviceMapping(device);
@@ -207,11 +210,11 @@ function runController(context, callback) {
                 return;
             }
             if (device.meta.configured) {
-                log_1.debug(device.ieeeAddr, "already configured...");
+                log_1.debug(device.ieeeAddr, "already configured...", device.modelID);
                 return;
             }
             if (!mapped.configure) {
-                log_1.debug(device.ieeeAddr, "trivial configuration...");
+                log_1.debug(device.ieeeAddr, "trivial configuration...", device.modelID);
                 device.meta.configured = true;
                 device.save();
                 log_1.log("configured device:", device.ieeeAddr, device.modelID);
@@ -221,7 +224,7 @@ function runController(context, callback) {
             log_1.debug(device.ieeeAddr, "doing configuration...");
             mapped.configure(device.ieeeAddr, sheperd, sheperdCoordinator, (ok, error) => {
                 if (!ok) {
-                    error(device.ieeeAddr, "configuration failed:", error);
+                    error(device.ieeeAddr, "configuration failed:", error, device.modelID);
                     device.meta.configured = false;
                     device.save();
                     return;
