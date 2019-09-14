@@ -40,6 +40,7 @@ location("Living Room", () => {
     })
 })
 
+/*
 location("Toilet", () => {
     const t1 = new Light("0x1", "Light 1")
     const t2 = new Light("0x2", "Light 2")
@@ -53,3 +54,4 @@ location("Toilet", () => {
         t2.setState("on", { forTime: 125, brightness })
     })
 })
+*/
