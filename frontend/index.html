@@ -98,6 +98,7 @@
 
             if (first) {
                 first = false
+                app.devices.length = 0
                 msg.forEach(d => {
                     if (!d.id) return
                     if (d.on === undefined) return

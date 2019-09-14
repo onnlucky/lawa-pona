@@ -83,16 +83,16 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
         }
     })
     controller.on(Events.deviceInterview, (event: InterviewEvent) => {
-        debug("Events.deviceInterview", event.device.ieeeAddr, event.device.getEndpoints().length)
+        debug("Events.deviceInterview", event.device.ieeeAddr, event.device.getEndpoints().length, event.device.modelID)
         configureDevice(event.device)
     })
     controller.on(Events.deviceJoined, (event: JoinedEvent) => {
-        debug("Events.deviceJoined", event.device.ieeeAddr)
+        debug("Events.deviceJoined", event.device.ieeeAddr, event.device.modelID)
     })
     controller.on(Events.deviceLeave, (event: LeaveEvent) => {
-        debug("Events.deviceLeave", event.ieeeAddr)
         triedConfiguring.delete(event.ieeeAddr)
         const device = controller.getDeviceByAddress(event.ieeeAddr)
+        debug("Events.deviceLeave", event.ieeeAddr, device ? device.modelID : "unknown")
         if (device) {
             device.removeFromDatabase()
         }
@@ -101,7 +101,13 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
     controller.on(Events.message, (event: MessageEvent) => {
         const device = event.device
         if (!device.meta.configured) {
-            debug("Events.message", event.type, event.device.ieeeAddr, event.device.getEndpoints().length)
+            debug(
+                "Events.message",
+                event.type,
+                event.device.ieeeAddr,
+                event.device.getEndpoints().length,
+                event.device.modelID
+            )
             if (!triedConfiguring.has(device.ieeeAddr)) {
                 triedConfiguring.add(device.ieeeAddr)
                 configureDevice(event.device)
@@ -164,6 +170,9 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
                     if (!endpoint.supportsInputCluster(cluster)) return
                     setupReport = true
 
+                    // seems to get confused if we setup reportings
+                    if (device.modelID === "ZG9101SAC-HP") return
+
                     if (processor) {
                         debug("requesting current status:", device.ieeeAddr, device.modelID)
                         const result = await endpoint.read(cluster, config.map(c => c.attribute))
@@ -201,7 +210,7 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
 
     function configureDevice(device: Device) {
         if (!device.interviewCompleted) {
-            debug(device.ieeeAddr, "still interviewing...")
+            debug(device.ieeeAddr, "still interviewing...", device.modelID)
             return
         }
 
@@ -213,12 +222,12 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
         }
 
         if (device.meta.configured) {
-            debug(device.ieeeAddr, "already configured...")
+            debug(device.ieeeAddr, "already configured...", device.modelID)
             return
         }
 
         if (!mapped.configure) {
-            debug(device.ieeeAddr, "trivial configuration...")
+            debug(device.ieeeAddr, "trivial configuration...", device.modelID)
             device.meta.configured = true
             device.save()
             log("configured device:", device.ieeeAddr, device.modelID)
@@ -229,7 +238,7 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
         debug(device.ieeeAddr, "doing configuration...")
         mapped.configure(device.ieeeAddr, sheperd, sheperdCoordinator, (ok: any, error: any) => {
             if (!ok) {
-                error(device.ieeeAddr, "configuration failed:", error)
+                error(device.ieeeAddr, "configuration failed:", error, device.modelID)
                 device.meta.configured = false
                 device.save()
                 return
