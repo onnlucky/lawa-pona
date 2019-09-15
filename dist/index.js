@@ -39,19 +39,18 @@ smarthome_1.location("Living Room", () => {
         }
     });
 });
-/*
-location("Toilet", () => {
-    const t1 = new Light("0x086bd7fffe020c74", "Light 1")
-    const t2 = new Light("0x2", "Light 2")
-    const motion1 = new MotionSensor("0x14b457fffe6b2ac8", "Motion Sensor")
-
-    rule([motion1, home], () => {
-        if (!motion1.on) return
-        if (t1.on && t1.byUser && t2.on && t2.byUser) return
-        const brightness = home.latenight ? 100 : 255
-        t1.setState("on", { forTime: 125, brightness })
-        t2.setState("on", { forTime: 125, brightness })
-    })
-})
-*/
+smarthome_1.location("Toilet", () => {
+    const t1 = new devices_1.Light("0x086bd7fffe020c74", "Light 1");
+    const t2 = new devices_1.Light("0x2", "Light 2");
+    const motion1 = new devices_1.MotionSensor("0x14b457fffe6b2ac8", "Motion Sensor");
+    smarthome_1.rule([motion1, home], () => {
+        if (!motion1.on)
+            return;
+        if (t1.on && t1.byUser && t2.on && t2.byUser)
+            return;
+        const brightness = home.latenight ? 100 : 255;
+        t1.setState("on", { forTime: 125, brightness });
+        t2.setState("on", { forTime: 125, brightness });
+    });
+});
 //# sourceMappingURL=index.js.map
