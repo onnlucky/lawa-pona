@@ -41,7 +41,7 @@ smarthome_1.location("Living Room", () => {
 });
 /*
 location("Toilet", () => {
-    const t1 = new Light("0x1", "Light 1")
+    const t1 = new Light("0x086bd7fffe020c74", "Light 1")
     const t2 = new Light("0x2", "Light 2")
     const motion1 = new MotionSensor("0x14b457fffe6b2ac8", "Motion Sensor")
 
