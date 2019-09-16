@@ -105,7 +105,7 @@ class ActiveState {
     hasBeen(key, { forTime }) {
         const rule = Links_1.Rule.current();
         if (!rule)
-            throw Error(".hasBeen() called outside or rule body");
+            throw Error(".hasBeen() called outside of rule body");
         const [key2, value2] = this.translateKeyValue(key, true);
         const asData = this;
         if (asData[key2] !== value2)

@@ -6,10 +6,13 @@ import { Context } from "activestate/Context"
 
 jest.mock("../zigbee/ZigbeeDevice")
 
-const deviceCommand = jest.fn()
+const deviceCommand = jest.fn(function(this: ZigbeeDevice) {
+    this.lastCommand = Context.current().time
+})
 
 function device(ieeeAddr: string): ZigbeeDevice {
     return {
+        lastCommand: 0,
         ieeeAddr,
         device: null,
         mapped: null,
@@ -39,9 +42,17 @@ ZigbeeContext.current = jest.fn(() => {
     return mockZigbeeContext
 })
 
-test("space", () => {
-    const home = new SmartHome({ location: "NL" })
+let home: SmartHome
+beforeEach(() => {
+    home = new SmartHome({ location: "NL", port: -1 })
+})
 
+afterEach(() => {
+    home.remove()
+    mockZigbeeContext.devicesByAddr = {}
+})
+
+test("space", () => {
     const zigbeeContext = ZigbeeContext.current()
     expect(zigbeeContext).toBeTruthy()
     expect(zigbeeContext.getDevice("0x1")).toBeTruthy()
@@ -57,6 +68,7 @@ test("space", () => {
     expect(deviceCommand).toHaveBeenCalledTimes(1)
     expect(deviceCommand).toHaveBeenCalledWith({ brightness: 255 })
 
+    cx.advanceTimeForTesting(10)
     light.processor.receiveCommand("genOnOff", "attributeReport", { onOff: 0 })
     expect(light.on).toBeFalsy()
 
@@ -89,4 +101,27 @@ test("space", () => {
 
     cx.advanceTimeForTesting(10)
     expect(light.on).toBeFalsy()
+})
+
+test("state reports should not interfere with timers", () => {
+    const light = new Light("0x1")
+    const motion = new MotionSensor("0x2")
+    rule([motion], () => {
+        if (motion.on) {
+            light.setState("on", { forTime: 10 })
+        }
+    })
+
+    motion.setState("on")
+    expect(light.on).toBeTruthy()
+    Context.current().advanceTimeForTesting(1)
+    expect(light.on).toBeTruthy()
+    light.processor.receiveCommand("genLevelCtrl", "attributeReport", { currentLevel: 254 })
+    Context.current().advanceTimeForTesting(10)
+    expect(light.on).toBeFalsy()
+    Context.current().advanceTimeForTesting(10)
+
+    // when receiving a report, should be used
+    light.processor.receiveCommand("genLevelCtrl", "attributeReport", { currentLevel: 254 })
+    expect(light.on).toBeTruthy()
 })

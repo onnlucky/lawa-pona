@@ -5,9 +5,12 @@ const devices_1 = require("devices");
 const ZigbeeDevice_1 = require("zigbee/ZigbeeDevice");
 const Context_1 = require("activestate/Context");
 jest.mock("../zigbee/ZigbeeDevice");
-const deviceCommand = jest.fn();
+const deviceCommand = jest.fn(function () {
+    this.lastCommand = Context_1.Context.current().time;
+});
 function device(ieeeAddr) {
     return {
+        lastCommand: 0,
         ieeeAddr,
         device: null,
         mapped: null,
@@ -35,8 +38,15 @@ const mockZigbeeContext = {
 ZigbeeDevice_1.ZigbeeContext.current = jest.fn(() => {
     return mockZigbeeContext;
 });
+let home;
+beforeEach(() => {
+    home = new smarthome_1.SmartHome({ location: "NL", port: -1 });
+});
+afterEach(() => {
+    home.remove();
+    mockZigbeeContext.devicesByAddr = {};
+});
 test("space", () => {
-    const home = new smarthome_1.SmartHome({ location: "NL" });
     const zigbeeContext = ZigbeeDevice_1.ZigbeeContext.current();
     expect(zigbeeContext).toBeTruthy();
     expect(zigbeeContext.getDevice("0x1")).toBeTruthy();
@@ -49,6 +59,7 @@ test("space", () => {
     light.setState("on");
     expect(deviceCommand).toHaveBeenCalledTimes(1);
     expect(deviceCommand).toHaveBeenCalledWith({ brightness: 255 });
+    cx.advanceTimeForTesting(10);
     light.processor.receiveCommand("genOnOff", "attributeReport", { onOff: 0 });
     expect(light.on).toBeFalsy();
     light.setState("on", { forTime: 10 });
@@ -75,5 +86,25 @@ test("space", () => {
     expect(cx.timers).toHaveLength(1);
     cx.advanceTimeForTesting(10);
     expect(light.on).toBeFalsy();
+});
+test("state reports should not interfere with timers", () => {
+    const light = new devices_1.Light("0x1");
+    const motion = new devices_1.MotionSensor("0x2");
+    smarthome_1.rule([motion], () => {
+        if (motion.on) {
+            light.setState("on", { forTime: 10 });
+        }
+    });
+    motion.setState("on");
+    expect(light.on).toBeTruthy();
+    Context_1.Context.current().advanceTimeForTesting(1);
+    expect(light.on).toBeTruthy();
+    light.processor.receiveCommand("genLevelCtrl", "attributeReport", { currentLevel: 254 });
+    Context_1.Context.current().advanceTimeForTesting(10);
+    expect(light.on).toBeFalsy();
+    Context_1.Context.current().advanceTimeForTesting(10);
+    // when receiving a report, should be used
+    light.processor.receiveCommand("genLevelCtrl", "attributeReport", { currentLevel: 254 });
+    expect(light.on).toBeTruthy();
 });
 //# sourceMappingURL=smarthome.test.js.map

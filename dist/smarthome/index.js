@@ -17,7 +17,7 @@ exports.units = units;
 const sync_1 = require("remote/sync");
 let __current = null;
 class SmartHome extends ActiveState_1.ActiveState {
-    constructor(options) {
+    constructor(options = {}) {
         super();
         this.latenight = false;
         if (__current)
@@ -25,12 +25,18 @@ class SmartHome extends ActiveState_1.ActiveState {
         __current = this;
         const context = new Context_1.Context().bind();
         new ZigbeeDevice_1.ZigbeeContext().bind();
-        new sync_1.SyncServer(context).serve();
+        const port = options.port !== undefined ? options.port : 8080;
+        if (port > 0) {
+            new sync_1.SyncServer(context).serve(port);
+        }
     }
     static current() {
         if (!__current)
             throw Error("no SmartHome object found");
         return __current;
+    }
+    remove() {
+        __current = null;
     }
     forEachDevice(body) { }
     forEachLight(body) { }

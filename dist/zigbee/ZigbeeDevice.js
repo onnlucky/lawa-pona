@@ -12,14 +12,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const SheperdCompat_1 = require("./SheperdCompat");
 const zigbee_1 = require("zigbee");
 const log_1 = require("log");
+const Context_1 = require("activestate/Context");
 class ZigbeeDevice {
     constructor(ieeeAddr) {
         this.ieeeAddr = ieeeAddr;
+        this.lastCommand = 0;
         this.device = null;
         this.mapped = null;
         this.processor = null;
     }
     sendCommand(object) {
+        this.lastCommand = Context_1.Context.current().time;
         log_1.command(this.ieeeAddr, "-->", object);
         const { device, mapped } = this;
         if (!device || !mapped)

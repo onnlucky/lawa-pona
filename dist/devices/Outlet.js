@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const Device_1 = require("./Device");
+const Context_1 = require("activestate/Context");
 class Outlet extends Device_1.OnOffDevice {
     constructor() {
         super(...arguments);
@@ -22,11 +23,17 @@ class OutletCommandProcessor extends Device_1.CommandProcessor {
     }
     receiveCommand(_cluster, command, data) {
         if (command === "attributeReport") {
+            if (Context_1.Context.current().time - this.device.lastCommand < 5)
+                return;
+            let change = false;
             const state = {};
-            if (data.onOff !== undefined) {
+            if (Device_1.isNumber(data.onOff)) {
                 state.on = data.onOff === 1;
+                if (this.state.on !== state.on) {
+                    change = true;
+                }
             }
-            if (Object.keys(state).length > 0) {
+            if (change) {
                 this.byDevice = true;
                 this.state.updateState(state);
             }

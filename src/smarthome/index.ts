@@ -11,6 +11,7 @@ export { units }
 export interface SmartHomeOptions {
     name: string
     location: string
+    port: number
 }
 
 let __current: SmartHome | null = null
@@ -23,13 +24,21 @@ export class SmartHome extends ActiveState {
         return __current
     }
 
-    constructor(options?: Partial<SmartHomeOptions>) {
+    remove() {
+        __current = null
+    }
+
+    constructor(options: Partial<SmartHomeOptions> = {}) {
         super()
         if (__current) throw Error("a SmartHome object was already created")
         __current = this
         const context = new Context().bind()
         new ZigbeeContext().bind()
-        new SyncServer(context).serve()
+
+        const port = options.port !== undefined ? options.port : 8080
+        if (port > 0) {
+            new SyncServer(context).serve(port)
+        }
     }
 
     forEachDevice(body: (device: Device) => void) {}

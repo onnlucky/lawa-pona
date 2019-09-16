@@ -3,12 +3,15 @@ import { Device } from "zigbee-herdsman/dist/controller/model"
 import { start as startZigbeeController } from "zigbee"
 
 import { log, command } from "log"
+import { Context } from "activestate/Context"
 
 export interface ZigbeeCommandProcessor {
     receiveCommand(_cluster: string, _command: string, _data: any): void
 }
 
 export class ZigbeeDevice {
+    lastCommand = 0
+
     constructor(public ieeeAddr: string) {}
 
     device: Device | null = null
@@ -16,6 +19,7 @@ export class ZigbeeDevice {
     processor: ZigbeeCommandProcessor | null = null
 
     sendCommand(object: { [key: string]: unknown }) {
+        this.lastCommand = Context.current().time
         command(this.ieeeAddr, "-->", object)
         const { device, mapped } = this
         if (!device || !mapped) return

@@ -7,6 +7,14 @@ const Context_1 = require("activestate/Context");
 // 1. ZigbeeDevice: the remote device as the zigbee software stack represents it
 // 2. CommandProcsessor: the object that will processes incoming zigbee commands, and send commands as state changes
 // 3. Device: the device represented as pure state, this is what rules are written against
+function isNumber(a) {
+    return typeof a === "number" && !isNaN(a);
+}
+exports.isNumber = isNumber;
+function inSameRange(a, b, flex = 0.5) {
+    return Math.abs(a - b) <= flex;
+}
+exports.inSameRange = inSameRange;
 class CommandProcessor {
     constructor(state) {
         this.state = state;
