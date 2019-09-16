@@ -1,4 +1,5 @@
-import { CommandProcessor, OnOffDevice } from "./Device"
+import { CommandProcessor, OnOffDevice, isNumber } from "./Device"
+import { Context } from "activestate/Context"
 
 export class Outlet extends OnOffDevice {
     processor = new OutletCommandProcessor(this)
@@ -17,11 +18,17 @@ class OutletCommandProcessor extends CommandProcessor<Outlet> {
 
     receiveCommand(_cluster: string, command: string, data: any) {
         if (command === "attributeReport") {
+            if (Context.current().time - this.device.lastCommand < 5) return
+
+            let change = false
             const state: Partial<Outlet> = {}
-            if (data.onOff !== undefined) {
+            if (isNumber(data.onOff)) {
                 state.on = data.onOff === 1
+                if (this.state.on !== state.on) {
+                    change = true
+                }
             }
-            if (Object.keys(state).length > 0) {
+            if (change) {
                 this.byDevice = true
                 this.state.updateState(state)
             }

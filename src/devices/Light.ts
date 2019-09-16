@@ -1,4 +1,5 @@
-import { CommandProcessor, OnOffDevice } from "./Device"
+import { CommandProcessor, OnOffDevice, inSameRange, isNumber } from "./Device"
+import { Context } from "activestate/Context"
 
 export class Light extends OnOffDevice {
     processor = new LightCommandProcessor(this)
@@ -34,14 +35,28 @@ class LightCommandProcessor extends CommandProcessor<Light> {
 
     receiveCommand(_cluster: string, command: string, data: any) {
         if (command === "attributeReport") {
+            // for most devices, we cannot use nor trust their initial report(s) after a command
+            if (Context.current().time - this.device.lastCommand < 5) return
+
+            let change = false
             const state: Partial<Light> = {}
-            if (data.onOff !== undefined) {
+            if (isNumber(data.onOff)) {
                 state.on = data.onOff === 1
+                if (this.state.on !== state.on) {
+                    change = true
+                }
             }
-            if (data.currentLevel !== undefined) {
+            if (isNumber(data.currentLevel)) {
                 state.brightness = data.currentLevel
+                if (!inSameRange(this.state.brightness, data.currentLevel, 2)) {
+                    change = true
+                }
+                if (!this.state.on && !inSameRange(data.currentLevel, 0, 2)) {
+                    state.on = true
+                    change = true
+                }
             }
-            if (Object.keys(state).length > 0) {
+            if (change) {
                 this.byDevice = true
                 this.state.updateState(state)
             }

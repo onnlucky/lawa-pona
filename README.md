@@ -55,3 +55,4 @@ It works when hooked up to my laptop :) that is it. No guarantees.
 -   [ ] Difference in controller coming online, device coming online, user making changes,
         devices reporting changes.
 -   [ ] Use clusters to determine device type.
+-   [x] State reports should not interfere with timers.

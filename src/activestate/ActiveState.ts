@@ -125,7 +125,7 @@ export class ActiveState {
 
     hasBeen(key: keyof this, { forTime }: { forTime: number }): boolean {
         const rule = Rule.current()
-        if (!rule) throw Error(".hasBeen() called outside or rule body")
+        if (!rule) throw Error(".hasBeen() called outside of rule body")
         const [key2, value2] = this.translateKeyValue(key as string, true)
         const asData = this as any
         if (asData[key2] !== value2) return false

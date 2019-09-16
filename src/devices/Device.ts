@@ -7,6 +7,14 @@ import { Context } from "activestate/Context"
 // 2. CommandProcsessor: the object that will processes incoming zigbee commands, and send commands as state changes
 // 3. Device: the device represented as pure state, this is what rules are written against
 
+export function isNumber(a: any): a is Number {
+    return typeof a === "number" && !isNaN(a)
+}
+
+export function inSameRange(a: number, b: number, flex = 0.5) {
+    return Math.abs(a - b) <= flex
+}
+
 export abstract class CommandProcessor<T extends Device> implements ActiveStateListener, ZigbeeCommandProcessor {
     device: ZigbeeDevice
 
