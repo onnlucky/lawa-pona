@@ -21,6 +21,9 @@ const findUsbDevice_1 = require("findUsbDevice");
 function sleep(seconds) {
     return new Promise(resolve => setTimeout(resolve, seconds * 1000));
 }
+function x(device) {
+    return device;
+}
 const defaultConfiguration = {
     minimumReportInterval: 3,
     maximumReportInterval: 300,
@@ -62,10 +65,12 @@ function runController(context, callback) {
             databasePath: "data.json",
             serialPort: { path: serialPort }
         });
+        let running = true;
         let exit;
         const exitPromise = new Promise(resolve => (exit = resolve));
         controller.on(zigbee_herdsman_1.Events.adapterDisconnected, (event) => {
             log_1.debug("Events.adapterDisconnected", event);
+            running = false;
             exit();
         });
         controller.on(zigbee_herdsman_1.Events.deviceAnnounce, (event) => {
@@ -111,7 +116,7 @@ function runController(context, callback) {
                 }
                 return;
             }
-            const delegate = device.__delegate;
+            const delegate = x(device).__delegate;
             if (delegate && delegate.processor) {
                 log_1.command(device.ieeeAddr, "<--", event.cluster, event.type, event.data, device.modelID);
                 delegate.processor.receiveCommand(event.cluster, event.type, event.data);
@@ -128,6 +133,40 @@ function runController(context, callback) {
         const coordinator = controller.getDevice({ type: "Coordinator" }).getEndpoint(1);
         const sheperdCoordinator = new SheperdCompat_1.SheperdEndpoint(coordinator);
         log_1.log("...started...");
+        setTimeout(() => __awaiter(this, void 0, void 0, function* () {
+            while (running) {
+                yield sleep(10);
+                const devices = controller.getDevices({});
+                for (const device of devices) {
+                    if (device.type === "Coordinator")
+                        continue;
+                    if (!device.interviewCompleted)
+                        continue;
+                    if (!device.meta.configured)
+                        continue;
+                    if (device["powerSource"] === "Battery")
+                        continue;
+                    const delegate = x(device).__delegate;
+                    const processor = delegate ? delegate.processor : null;
+                    if (!processor)
+                        continue;
+                    log_1.debug("pinging device:", device.ieeeAddr, device.modelID);
+                    let online = false;
+                    try {
+                        yield device.ping();
+                        online = true;
+                    }
+                    catch (e) {
+                        log_1.debug("device seems offline:", device.ieeeAddr, device.modelID, e);
+                    }
+                    if (x(device).__online !== online) {
+                        x(device).__online = online;
+                        log_1.command(device.ieeeAddr, "<--", "status", "status", { online }, device.modelID);
+                        processor.receiveCommand("status", "status", { online });
+                    }
+                }
+            }
+        }));
         const promises = controller.getDevices({}).map(device => {
             if (device.type === "Coordinator")
                 return;
@@ -165,12 +204,12 @@ function runController(context, callback) {
                             if (device.modelID === "ZG9101SAC-HP")
                                 return;
                             if (processor) {
-                                log_1.debug("requesting current status:", device.ieeeAddr, device.modelID);
+                                log_1.debug("requesting current status:", device.ieeeAddr, device.modelID, cluster);
                                 const result = yield endpoint.read(cluster, config.map(c => c.attribute));
                                 log_1.command(device.ieeeAddr, "<--", cluster, "attributeReport", result, device.modelID);
                                 processor.receiveCommand(cluster, "attributeReport", result);
                             }
-                            log_1.debug("setting up reporting:", device.ieeeAddr, device.modelID);
+                            log_1.debug("setting up reporting:", device.ieeeAddr, device.modelID, cluster);
                             yield endpoint.bind(cluster, coordinator);
                             yield endpoint.configureReporting(cluster, config);
                         }));
@@ -188,6 +227,7 @@ function runController(context, callback) {
             });
         }
         function addDevice(device, mapped) {
+            x(device).__online = true;
             context.getDevice(device.ieeeAddr).setDevice(device, mapped);
             return readReportOrPing(device);
         }

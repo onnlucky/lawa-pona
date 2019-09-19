@@ -34,7 +34,11 @@ class LightCommandProcessor extends CommandProcessor<Light> {
     }
 
     receiveCommand(_cluster: string, command: string, data: any) {
-        if (command === "attributeReport") {
+        if (command === "status") {
+            if (data.online) {
+                this.state.updateState({ on: true })
+            }
+        } else if (command === "attributeReport") {
             // for most devices, we cannot use nor trust their initial report(s) after a command
             if (Context.current().time - this.device.lastCommand < 5) return
 

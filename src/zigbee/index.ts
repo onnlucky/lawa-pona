@@ -20,6 +20,15 @@ function sleep(seconds: number) {
     return new Promise(resolve => setTimeout(resolve, seconds * 1000))
 }
 
+interface DeviceExtra extends Device {
+    __online: boolean
+    __delegate: ZigbeeDevice | undefined
+}
+
+function x(device: Device): DeviceExtra {
+    return device as DeviceExtra
+}
+
 const defaultConfiguration = {
     minimumReportInterval: 3,
     maximumReportInterval: 300,
@@ -60,10 +69,12 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
         serialPort: { path: serialPort }
     })
 
+    let running = true
     let exit: Function
     const exitPromise = new Promise(resolve => (exit = resolve))
     controller.on(Events.adapterDisconnected, (event: any) => {
         debug("Events.adapterDisconnected", event)
+        running = false
         exit()
     })
 
@@ -115,7 +126,7 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
             return
         }
 
-        const delegate: ZigbeeDevice = (device as any).__delegate
+        const delegate = x(device).__delegate
         if (delegate && delegate.processor) {
             command(device.ieeeAddr, "<--", event.cluster, event.type, event.data, device.modelID)
             delegate.processor.receiveCommand(event.cluster, event.type, event.data)
@@ -133,6 +144,38 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
     const coordinator = controller.getDevice({ type: "Coordinator" })!.getEndpoint(1)
     const sheperdCoordinator = new SheperdEndpoint(coordinator)
     log("...started...")
+
+    setTimeout(async () => {
+        while (running) {
+            await sleep(10)
+            const devices = controller.getDevices({})
+            for (const device of devices) {
+                if (device.type === "Coordinator") continue
+                if (!device.interviewCompleted) continue
+                if (!device.meta.configured) continue
+                if (device["powerSource"] === "Battery") continue
+
+                const delegate = x(device).__delegate
+                const processor = delegate ? delegate.processor : null
+                if (!processor) continue
+
+                debug("pinging device:", device.ieeeAddr, device.modelID)
+                let online = false
+                try {
+                    await device.ping()
+                    online = true
+                } catch (e) {
+                    debug("device seems offline:", device.ieeeAddr, device.modelID, e)
+                }
+
+                if (x(device).__online !== online) {
+                    x(device).__online = online
+                    command(device.ieeeAddr, "<--", "status", "status", { online }, device.modelID)
+                    processor.receiveCommand("status", "status", { online })
+                }
+            }
+        }
+    })
 
     const promises = controller.getDevices({}).map(device => {
         if (device.type === "Coordinator") return
@@ -174,12 +217,12 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
                     if (device.modelID === "ZG9101SAC-HP") return
 
                     if (processor) {
-                        debug("requesting current status:", device.ieeeAddr, device.modelID)
+                        debug("requesting current status:", device.ieeeAddr, device.modelID, cluster)
                         const result = await endpoint.read(cluster, config.map(c => c.attribute))
                         command(device.ieeeAddr, "<--", cluster, "attributeReport", result, device.modelID)
                         processor.receiveCommand(cluster, "attributeReport", result)
                     }
-                    debug("setting up reporting:", device.ieeeAddr, device.modelID)
+                    debug("setting up reporting:", device.ieeeAddr, device.modelID, cluster)
                     await endpoint.bind(cluster, coordinator)
                     await endpoint.configureReporting(cluster, config)
                 })
@@ -196,6 +239,7 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
     }
 
     function addDevice(device: Device, mapped: MappedDevice): Promise<void> {
+        x(device).__online = true
         context.getDevice(device.ieeeAddr).setDevice(device, mapped)
         return readReportOrPing(device)
     }
