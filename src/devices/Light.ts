@@ -1,4 +1,4 @@
-import { CommandProcessor, OnOffDevice, inSameRange, isNumber } from "./Device"
+import { CommandProcessor, OnOffDevice, inSameRange, isNumber, isBoolean } from "./Device"
 import { Context } from "activestate/Context"
 
 export class Light extends OnOffDevice {
@@ -35,8 +35,8 @@ class LightCommandProcessor extends CommandProcessor<Light> {
 
     receiveCommand(_cluster: string, command: string, data: any) {
         if (command === "status") {
-            if (data.online) {
-                this.state.updateState({ on: true })
+            if (isBoolean(data.online)) {
+                this.state.updateState({ online: data.online })
             }
         } else if (command === "attributeReport") {
             // for most devices, we cannot use nor trust their initial report(s) after a command
