@@ -3,10 +3,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const ActiveState_1 = require("../activestate/ActiveState");
 const ZigbeeDevice_1 = require("zigbee/ZigbeeDevice");
 const Context_1 = require("activestate/Context");
+const smarthome_1 = require("smarthome");
 // here 3 things come together
 // 1. ZigbeeDevice: the remote device as the zigbee software stack represents it
 // 2. CommandProcsessor: the object that will processes incoming zigbee commands, and send commands as state changes
 // 3. Device: the device represented as pure state, this is what rules are written against
+function isBoolean(a) {
+    return typeof a === "boolean";
+}
+exports.isBoolean = isBoolean;
 function isNumber(a) {
     return typeof a === "number" && !isNaN(a);
 }
@@ -29,6 +34,9 @@ class Device extends ActiveState_1.ActiveState {
     constructor(ieeeAddr, name) {
         super(ieeeAddr);
         this.name = name;
+        this.online = true;
+        this.location = "";
+        this.location = smarthome_1.SmartHome.current().activeLocation;
     }
 }
 exports.Device = Device;

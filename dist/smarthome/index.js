@@ -15,11 +15,24 @@ exports.rule = Links_1.rule;
 const units = __importStar(require("./units"));
 exports.units = units;
 const sync_1 = require("remote/sync");
+const units_1 = require("./units");
 let __current = null;
 class SmartHome extends ActiveState_1.ActiveState {
     constructor(options = {}) {
-        super();
+        super("smarthome");
+        this.day = units_1.WEEKDAYS[0];
+        this.hour = 0;
+        this.minute = 0;
         this.latenight = false;
+        this.updateTime = () => {
+            const now = new Date();
+            const day = units_1.WEEKDAYS[now.getDay()];
+            const hour = now.getHours();
+            const minute = now.getMinutes();
+            const latenight = this.hour >= 1 && this.hour < 6;
+            this.updateState({ day, hour, minute, latenight });
+        };
+        this.activeLocation = "";
         if (__current)
             throw Error("a SmartHome object was already created");
         __current = this;
@@ -29,6 +42,9 @@ class SmartHome extends ActiveState_1.ActiveState {
         if (port > 0) {
             new sync_1.SyncServer(context).serve(port);
         }
+        this.updateTime();
+        context.addState(this);
+        setInterval(this.updateTime, 5000);
     }
     static current() {
         if (!__current)
@@ -40,8 +56,12 @@ class SmartHome extends ActiveState_1.ActiveState {
     }
     forEachDevice(body) { }
     forEachLight(body) { }
-    beginLocation(name) { }
-    endLocation(name) { }
+    beginLocation(name) {
+        this.activeLocation = name;
+    }
+    endLocation(name) {
+        this.activeLocation = name;
+    }
 }
 exports.SmartHome = SmartHome;
 function location(name, body) {

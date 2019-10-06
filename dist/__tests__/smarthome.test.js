@@ -107,4 +107,38 @@ test("state reports should not interfere with timers", () => {
     light.processor.receiveCommand("genLevelCtrl", "attributeReport", { currentLevel: 254 });
     expect(light.on).toBeTruthy();
 });
+test("location", () => {
+    smarthome_1.location("here", () => {
+        const light = new devices_1.Light("0x1");
+        expect(light.location).toBe("here");
+    });
+});
+test("time", () => {
+    const OriginalDate = Date;
+    let d1 = new Date("1980-08-17T00:01:13");
+    let d2 = new Date("1980-08-17T01:23:44");
+    let d3 = new Date("1980-08-17T07:00:00");
+    let _now = d1;
+    global.Date = class extends Date {
+        constructor() {
+            super();
+            return _now;
+        }
+    };
+    home.updateTime();
+    expect(home.hour).toBe(0);
+    expect(home.minute).toBe(1);
+    expect(home.latenight).toBe(false);
+    _now = d2;
+    home.updateTime();
+    expect(home.hour).toBe(1);
+    expect(home.minute).toBe(23);
+    expect(home.latenight).toBe(true);
+    _now = d3;
+    home.updateTime();
+    expect(home.hour).toBe(7);
+    expect(home.minute).toBe(0);
+    expect(home.latenight).toBe(false);
+    global.Date = OriginalDate;
+});
 //# sourceMappingURL=smarthome.test.js.map

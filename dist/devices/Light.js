@@ -43,8 +43,8 @@ class LightCommandProcessor extends Device_1.CommandProcessor {
     }
     receiveCommand(_cluster, command, data) {
         if (command === "status") {
-            if (data.online) {
-                this.state.updateState({ on: true });
+            if (Device_1.isBoolean(data.online)) {
+                this.state.updateState({ online: data.online });
             }
         }
         else if (command === "attributeReport") {

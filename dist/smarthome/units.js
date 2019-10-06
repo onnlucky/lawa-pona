@@ -7,4 +7,5 @@ exports.MINUTES = exports.MINUTE;
 exports.HOUR = 60 * 60;
 exports.HOURS = exports.HOUR;
 exports.PERCENT = 0.01;
+exports.WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Satureday"];
 //# sourceMappingURL=units.js.map

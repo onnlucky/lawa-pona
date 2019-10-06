@@ -1,13 +1,18 @@
 import { ActiveState, ActiveStateListener } from "../activestate/ActiveState"
 import { ZigbeeDevice, ZigbeeCommandProcessor, ZigbeeContext } from "zigbee/ZigbeeDevice"
 import { Context } from "activestate/Context"
+import { SmartHome } from "smarthome"
 
 // here 3 things come together
 // 1. ZigbeeDevice: the remote device as the zigbee software stack represents it
 // 2. CommandProcsessor: the object that will processes incoming zigbee commands, and send commands as state changes
 // 3. Device: the device represented as pure state, this is what rules are written against
 
-export function isNumber(a: any): a is Number {
+export function isBoolean(a: any): a is boolean {
+    return typeof a === "boolean"
+}
+
+export function isNumber(a: any): a is number {
     return typeof a === "number" && !isNaN(a)
 }
 
@@ -31,9 +36,12 @@ export abstract class CommandProcessor<T extends Device> implements ActiveStateL
 
 export abstract class Device extends ActiveState {
     processor: CommandProcessor<Device>
+    online = true
+    location = ""
 
     constructor(ieeeAddr: string, public name?: string) {
         super(ieeeAddr)
+        this.location = SmartHome.current().activeLocation
     }
 }
 
