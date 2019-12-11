@@ -26,7 +26,8 @@ smarthome_1.location("Living Room", () => {
     remote.connectTo(l2);
     const l3 = new devices_1.Outlet("0x000d6ffffedaaa1b", "TV Light");
     const l4 = new devices_1.Outlet("0x000d6ffffed63ea9", "Reading Light");
-    const l5 = new devices_1.Outlet("0x000d6ffffeb1c9dc", "Christmas Tree");
+    const l5 = new devices_1.Outlet("0x000d6ffffeb1c9dc", "Christmas Tree Lights");
+    new devices_1.Switch("0x000d6ffffec5f0e4", "Switch").connectTo(l5);
     smarthome_1.rule([remote], () => {
         if (remote.button === devices_1.IkeaRemote.cycleLeft) {
             l3.turnOff();

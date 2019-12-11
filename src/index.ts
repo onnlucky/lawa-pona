@@ -26,7 +26,8 @@ location("Living Room", () => {
 
     const l3 = new Outlet("0x000d6ffffedaaa1b", "TV Light")
     const l4 = new Outlet("0x000d6ffffed63ea9", "Reading Light")
-    const l5 = new Outlet("0x000d6ffffeb1c9dc", "Christmas Tree")
+    const l5 = new Outlet("0x000d6ffffeb1c9dc", "Christmas Tree Lights")
+    new Switch("0x000d6ffffec5f0e4", "Switch").connectTo(l5)
 
     rule([remote], () => {
         if (remote.button === IkeaRemote.cycleLeft) {
