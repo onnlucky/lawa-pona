@@ -1,11 +1,10 @@
 import { CommandProcessor, OnOffDevice } from "./Device"
-import { Light } from "./Light"
 import { bind } from "activestate/Links"
 
 export class Switch extends OnOffDevice {
     processor = new SwitchCommandProcessor(this)
 
-    connectTo(sink: Light) {
+    connectTo(sink: OnOffDevice) {
         bind(this, "on", sink, "on")
     }
 }
