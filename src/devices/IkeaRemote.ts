@@ -1,7 +1,6 @@
 import { OnOffDevice, CommandProcessor } from "./Device"
 import { Light } from "./Light"
 import { bind } from "activestate/Links"
-import { log } from "log"
 
 export class IkeaRemote extends OnOffDevice {
     processor = new IkeaRemoteCommandProcessor(this)

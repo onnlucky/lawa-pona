@@ -1,5 +1,5 @@
 import { rule, location, units, SmartHome } from "smarthome"
-import { Light, Dimmer, MotionSensor, Outlet, IkeaRemote } from "devices"
+import { Light, Dimmer, MotionSensor, Outlet, IkeaRemote, Switch } from "devices"
 
 const home = new SmartHome()
 
@@ -26,17 +26,29 @@ location("Living Room", () => {
 
     const l3 = new Outlet("0x000d6ffffedaaa1b", "TV Light")
     const l4 = new Outlet("0x000d6ffffed63ea9", "Reading Light")
+    const l5 = new Outlet("0x000d6ffffeb1c9dc", "Christmas Tree")
 
     rule([remote], () => {
-        const off1 = remote.button === IkeaRemote.cycleLeft
-        const off2 = remote.previousState().level === 0 && remote.button === IkeaRemote.dimDown
-        if (off1 || off2) {
+        if (remote.button === IkeaRemote.cycleLeft) {
             l3.turnOff()
             l4.turnOff()
         } else if (remote.button === IkeaRemote.cycleRight) {
             l3.turnOn()
             l4.turnOn()
         }
+    })
+
+    const button = new Switch("0x000d6ffffec5f0e4", "All")
+    rule([button], () => {
+        if (button.on) {
+            l5.turnOn()
+            return
+        }
+        l1.turnOff()
+        l2.turnOff()
+        l3.turnOff()
+        l4.turnOff()
+        l5.turnOff()
     })
 })
 
