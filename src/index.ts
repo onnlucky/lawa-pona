@@ -38,19 +38,6 @@ location("Living Room", () => {
             l4.turnOn()
         }
     })
-
-    const button = new Switch("0x000d6ffffec5f0e4", "All")
-    rule([button], () => {
-        if (button.on) {
-            l5.turnOn()
-            return
-        }
-        l1.turnOff()
-        l2.turnOff()
-        l3.turnOff()
-        l4.turnOff()
-        l5.turnOff()
-    })
 })
 
 location("Toilet", () => {
