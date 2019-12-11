@@ -12,4 +12,6 @@ var MotionSensor_1 = require("./MotionSensor");
 exports.MotionSensor = MotionSensor_1.MotionSensor;
 var IkeaRemote_1 = require("./IkeaRemote");
 exports.IkeaRemote = IkeaRemote_1.IkeaRemote;
+var Switch_1 = require("./Switch");
+exports.Switch = Switch_1.Switch;
 //# sourceMappingURL=index.js.map

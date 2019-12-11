@@ -26,10 +26,9 @@ smarthome_1.location("Living Room", () => {
     remote.connectTo(l2);
     const l3 = new devices_1.Outlet("0x000d6ffffedaaa1b", "TV Light");
     const l4 = new devices_1.Outlet("0x000d6ffffed63ea9", "Reading Light");
+    const l5 = new devices_1.Outlet("0x000d6ffffeb1c9dc", "Christmas Tree");
     smarthome_1.rule([remote], () => {
-        const off1 = remote.button === devices_1.IkeaRemote.cycleLeft;
-        const off2 = remote.previousState().level === 0 && remote.button === devices_1.IkeaRemote.dimDown;
-        if (off1 || off2) {
+        if (remote.button === devices_1.IkeaRemote.cycleLeft) {
             l3.turnOff();
             l4.turnOff();
         }
@@ -37,6 +36,18 @@ smarthome_1.location("Living Room", () => {
             l3.turnOn();
             l4.turnOn();
         }
+    });
+    const button = new devices_1.Switch("0x000d6ffffec5f0e4", "All");
+    smarthome_1.rule([button], () => {
+        if (button.on) {
+            l5.turnOn();
+            return;
+        }
+        l1.turnOff();
+        l2.turnOff();
+        l3.turnOff();
+        l4.turnOff();
+        l5.turnOff();
     });
 });
 smarthome_1.location("Toilet", () => {
