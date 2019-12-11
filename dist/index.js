@@ -38,18 +38,6 @@ smarthome_1.location("Living Room", () => {
             l4.turnOn();
         }
     });
-    const button = new devices_1.Switch("0x000d6ffffec5f0e4", "All");
-    smarthome_1.rule([button], () => {
-        if (button.on) {
-            l5.turnOn();
-            return;
-        }
-        l1.turnOff();
-        l2.turnOff();
-        l3.turnOff();
-        l4.turnOff();
-        l5.turnOff();
-    });
 });
 smarthome_1.location("Toilet", () => {
     const t1 = new devices_1.Light("0x086bd7fffe020c74", "Light 1");
