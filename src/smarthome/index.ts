@@ -49,9 +49,19 @@ export class SmartHome extends ActiveState {
         const context = new Context().bind()
         new ZigbeeContext().bind()
 
-        const port = options.port !== undefined ? options.port : 8080
-        if (port > 0) {
-            new SyncServer(context).serve(port)
+        if (options.port !== undefined) {
+            if (options.port > 0) {
+                new SyncServer(context).serve(options.port)
+                console.log("port", options.port)
+            }
+        } else {
+            try {
+                new SyncServer(context).serve(80)
+                console.log("port 80")
+            } catch (e) {
+                new SyncServer(context).serve(8080)
+                console.log("port 8080")
+            }
         }
 
         this.updateTime()
