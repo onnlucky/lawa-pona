@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const smarthome_1 = require("smarthome");
 const devices_1 = require("devices");
-const home = new smarthome_1.SmartHome();
+const home = new smarthome_1.SmartHome({ port: 80 });
 smarthome_1.rule([home], () => {
     if (!home.latenight)
         return;
