@@ -46,7 +46,7 @@ class ToggleSwitchCommandProcessor extends Device_1.CommandProcessor {
     stateChanged(_state, _external) { }
     receiveCommand(_cluster, command, _data) {
         if (command === "commandOn") {
-            const now = performance.now() / 1000;
+            const now = Date.now() / 1000;
             const ago = now - this.lastTime;
             this.lastTime = now;
             const count = ago > 2.5 ? 1 : this.state.count + 1;
