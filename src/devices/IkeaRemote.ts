@@ -7,6 +7,10 @@ export class IkeaRemote extends OnOffDevice {
     level = 0
     button = "none"
 
+    postProcess(_update: Partial<this>) {
+        this.button = "none"
+    }
+
     connectTo(sink: Light) {
         bind(this, "on", sink, "on")
         bind(this, "level", sink, "brightness")

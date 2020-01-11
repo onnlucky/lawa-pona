@@ -1,5 +1,6 @@
 import { rule, location, units, SmartHome } from "smarthome"
 import { Light, Dimmer, MotionSensor, Outlet, IkeaRemote, Switch } from "devices"
+import { ToggleSwitch } from "devices/Switch"
 
 const home = new SmartHome()
 
@@ -26,8 +27,8 @@ location("Living Room", () => {
 
     const l3 = new Outlet("0x000d6ffffedaaa1b", "TV Light")
     const l4 = new Outlet("0x000d6ffffed63ea9", "Reading Light")
-    const l5 = new Outlet("0x000d6ffffeb1c9dc", "Christmas Tree Lights")
-    new Switch("0x000d6ffffec5f0e4", "Switch").connectTo(l5)
+
+    const lights = [l1, l2, l3, l4]
 
     rule([remote], () => {
         if (remote.button === IkeaRemote.cycleLeft) {
@@ -38,6 +39,26 @@ location("Living Room", () => {
             l4.turnOn()
         }
     })
+
+    const s1 = new ToggleSwitch("0x000d6ffffec5f0e4", "All Off Switch")
+    const s2 = new ToggleSwitch("0x0", "All Off Switch")
+    rule([s1, s2], () => {
+        for (const s of [s1, s2]) {
+            if (s.button === ToggleSwitch.on) {
+                if (s.count > 1) {
+                    for (const l of lights) l.turnOn()
+                } else {
+                    for (const l of [l1, l2]) l.turnOn()
+                }
+            } else if (s.button === ToggleSwitch.off) {
+                for (const l of lights) l.turnOff()
+            }
+        }
+    })
+})
+
+location("Office", () => {
+    const heater = new Outlet("0x000d6ffffeb1c9dc", "Heater")
 })
 
 location("Toilet", () => {
