@@ -39,7 +39,7 @@ smarthome_1.location("Living Room", () => {
         }
     });
     const s1 = new Switch_1.ToggleSwitch("0x000d6ffffec5f0e4", "All Off Switch");
-    const s2 = new Switch_1.ToggleSwitch("0x0", "All Off Switch");
+    const s2 = new Switch_1.ToggleSwitch("0xec1bbdfffebd01d3", "All Off Switch");
     smarthome_1.rule([s1, s2], () => {
         for (const s of [s1, s2]) {
             if (s.button === Switch_1.ToggleSwitch.on) {

@@ -41,7 +41,7 @@ location("Living Room", () => {
     })
 
     const s1 = new ToggleSwitch("0x000d6ffffec5f0e4", "All Off Switch")
-    const s2 = new ToggleSwitch("0x0", "All Off Switch")
+    const s2 = new ToggleSwitch("0xec1bbdfffebd01d3", "All Off Switch")
     rule([s1, s2], () => {
         for (const s of [s1, s2]) {
             if (s.button === ToggleSwitch.on) {
