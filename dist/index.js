@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const smarthome_1 = require("smarthome");
 const devices_1 = require("devices");
+const Switch_1 = require("devices/Switch");
 const home = new smarthome_1.SmartHome();
 smarthome_1.rule([home], () => {
     if (!home.latenight)
@@ -28,6 +29,7 @@ smarthome_1.location("Living Room", () => {
     const l4 = new devices_1.Outlet("0x000d6ffffed63ea9", "Reading Light");
     const l5 = new devices_1.Outlet("0x000d6ffffeb1c9dc", "Christmas Tree Lights");
     new devices_1.Switch("0x000d6ffffec5f0e4", "Switch").connectTo(l5);
+    const lights = [l1, l2, l3, l4];
     smarthome_1.rule([remote], () => {
         if (remote.button === devices_1.IkeaRemote.cycleLeft) {
             l3.turnOff();
@@ -38,6 +40,29 @@ smarthome_1.location("Living Room", () => {
             l4.turnOn();
         }
     });
+    const s1 = new Switch_1.ToggleSwitch("0x000d6ffffec5f0e4", "All Off Switch");
+    const s2 = new Switch_1.ToggleSwitch("0x0", "All Off Switch");
+    smarthome_1.rule([s1, s2], () => {
+        for (const s of [s1, s2]) {
+            if (s.button === Switch_1.ToggleSwitch.on) {
+                if (s.count > 1) {
+                    for (const l of lights)
+                        l.turnOn();
+                }
+                else {
+                    for (const l of [l1, l2])
+                        l.turnOn();
+                }
+            }
+            else if (s.button === Switch_1.ToggleSwitch.off) {
+                for (const l of lights)
+                    l.turnOff();
+            }
+        }
+    });
+});
+smarthome_1.location("Office", () => {
+    const heater = new devices_1.Outlet("0x000d6ffffeb1c9dc", "Heater");
 });
 smarthome_1.location("Toilet", () => {
     const t1 = new devices_1.Light("0x086bd7fffe020c74", "Light 1");

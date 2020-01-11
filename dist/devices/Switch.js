@@ -23,4 +23,38 @@ class SwitchCommandProcessor extends Device_1.CommandProcessor {
         }
     }
 }
+class ToggleSwitch extends Device_1.Device {
+    constructor() {
+        super(...arguments);
+        this.count = 0;
+        this.button = "none";
+        this.processor = new ToggleSwitchCommandProcessor(this);
+    }
+    postProcess(_update) {
+        this.button = "none";
+    }
+}
+exports.ToggleSwitch = ToggleSwitch;
+ToggleSwitch.none = "none";
+ToggleSwitch.on = "on";
+ToggleSwitch.off = "off";
+class ToggleSwitchCommandProcessor extends Device_1.CommandProcessor {
+    constructor() {
+        super(...arguments);
+        this.lastTime = 0;
+    }
+    stateChanged(_state, _external) { }
+    receiveCommand(_cluster, command, _data) {
+        if (command === "commandOn") {
+            const now = performance.now() / 1000;
+            const ago = now - this.lastTime;
+            this.lastTime = now;
+            const count = ago > 2.5 ? 1 : this.state.count + 1;
+            this.state.updateState({ button: "on", count });
+        }
+        else if (command === "commandOff") {
+            this.state.updateState({ button: "off", count: 0 });
+        }
+    }
+}
 //# sourceMappingURL=Switch.js.map

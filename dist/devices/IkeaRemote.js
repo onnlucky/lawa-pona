@@ -9,6 +9,9 @@ class IkeaRemote extends Device_1.OnOffDevice {
         this.level = 0;
         this.button = "none";
     }
+    postProcess(_update) {
+        this.button = "none";
+    }
     connectTo(sink) {
         Links_1.bind(this, "on", sink, "on");
         Links_1.bind(this, "level", sink, "brightness");
