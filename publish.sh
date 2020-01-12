@@ -23,4 +23,6 @@ git push
 git checkout master
 echo "--- updating server ---"
 ssh pi@192.168.87.100 "cd lawa-pona && git pull && yarn && pm2 restart lawa-pona"
+echo "--- log ---"
 echo ssh pi@192.168.87.100 pm2 logs
+ssh pi@192.168.87.100 pm2 logs

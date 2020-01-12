@@ -128,7 +128,11 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
 
         const delegate = x(device).__delegate
         if (delegate && delegate.processor) {
-            command(device.ieeeAddr, "<--", event.cluster, event.type, event.data, device.modelID)
+            if (event.type === "readResponse" || event.type === "attributeReport") {
+                debug(device.ieeeAddr, "<--", event.cluster, event.type, event.data, device.modelID)
+            } else {
+                command(device.ieeeAddr, "<--", event.cluster, event.type, event.data, device.modelID)
+            }
             delegate.processor.receiveCommand(event.cluster, event.type, event.data)
             return
         }
