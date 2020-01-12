@@ -75,10 +75,10 @@ function runController(context, callback) {
         });
         controller.on(zigbee_herdsman_1.Events.deviceAnnounce, (event) => {
             try {
-                log_1.debug("Events.deviceAnnounce", event.device.ieeeAddr, event.device.modelID);
+                log_1.command("Events.deviceAnnounce", event.device.ieeeAddr, event.device.modelID);
             }
             catch (e) {
-                log_1.debug("Events.deviceAnnounce", event);
+                log_1.command("Events.deviceAnnounce", event);
             }
             const device = event.device;
             if (!device)
@@ -206,7 +206,7 @@ function runController(context, callback) {
                             if (processor) {
                                 log_1.debug("requesting current status:", device.ieeeAddr, device.modelID, cluster);
                                 const result = yield endpoint.read(cluster, config.map(c => c.attribute));
-                                log_1.command(device.ieeeAddr, "<--", cluster, "attributeReport", result, device.modelID);
+                                log_1.debug(device.ieeeAddr, "<--", cluster, "attributeReport", result, device.modelID);
                                 processor.receiveCommand(cluster, "attributeReport", result);
                             }
                             log_1.debug("setting up reporting:", device.ieeeAddr, device.modelID, cluster);
