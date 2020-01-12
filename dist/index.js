@@ -78,7 +78,7 @@ smarthome_1.location("Shed", () => {
 smarthome_1.location("Toilet", () => {
     const t1 = new devices_1.Light("0x086bd7fffe020c74", "Light 1");
     const t2 = new devices_1.Light("0x2", "Light 2");
-    const motion1 = new devices_1.MotionSensor("0x14b457fffe6b2ac8", "Motion Sensor");
+    const motion1 = new devices_1.MotionSensor("0x0", "Motion Sensor");
     smarthome_1.rule([motion1, home], () => {
         if (!motion1.on)
             return;
