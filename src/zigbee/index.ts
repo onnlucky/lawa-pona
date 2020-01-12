@@ -80,9 +80,9 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
 
     controller.on(Events.deviceAnnounce, (event: AnnounceEvent) => {
         try {
-            debug("Events.deviceAnnounce", event.device.ieeeAddr, event.device.modelID)
+            command("Events.deviceAnnounce", event.device.ieeeAddr, event.device.modelID)
         } catch (e) {
-            debug("Events.deviceAnnounce", event)
+            command("Events.deviceAnnounce", event)
         }
         const device = event.device
         if (!device) return
@@ -218,8 +218,11 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
 
                     if (processor) {
                         debug("requesting current status:", device.ieeeAddr, device.modelID, cluster)
-                        const result = await endpoint.read(cluster, config.map(c => c.attribute))
-                        command(device.ieeeAddr, "<--", cluster, "attributeReport", result, device.modelID)
+                        const result = await endpoint.read(
+                            cluster,
+                            config.map(c => c.attribute)
+                        )
+                        debug(device.ieeeAddr, "<--", cluster, "attributeReport", result, device.modelID)
                         processor.receiveCommand(cluster, "attributeReport", result)
                     }
                     debug("setting up reporting:", device.ieeeAddr, device.modelID, cluster)
