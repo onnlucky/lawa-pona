@@ -59,7 +59,7 @@ location("Living Room", () => {
 })
 
 location("Office", () => {
-    const heater = new Outlet("0x000b3cfffef0a996", "Heater Office Light")
+    new Outlet("0x000b3cfffef0a996", "Heater Office Light")
 })
 
 location("Shed", () => {
@@ -67,9 +67,14 @@ location("Shed", () => {
     const motion1 = new MotionSensor("0x14b457fffe6b2ac8", "Motion Sensor")
     rule([motion1], () => {
         if (!motion1.on) return
-        // const hour = new Date().getHours()
-        // if (hour > 9 && hour < 16) return
+        const hour = new Date().getHours()
+        if (hour > 9 && hour < 16) return
         l1.setState("on", { forTime: 3 * MINUTES })
+    })
+    rule([l1], () => {
+        if (l1.hasBeen("on", { forTime: 3 * MINUTES })) {
+            l1.turnOff()
+        }
     })
 })
 
