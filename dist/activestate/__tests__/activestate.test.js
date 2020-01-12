@@ -88,7 +88,9 @@ test("state.setState(on, forTime: 30)", () => {
     button.setState("on", { forTime: 30 });
     expect(button.on).toBeTruthy();
     expect(context.timers).toHaveLength(1);
-    context.advanceTimeForTesting(30);
+    context.advanceTimeForTesting(15);
+    expect(button.on).toBeTruthy();
+    context.advanceTimeForTesting(15);
     expect(button.on).toBeFalsy();
 });
 test("state.hasBeen(on, forTime: 30)", () => {

@@ -61,7 +61,7 @@ smarthome_1.location("Living Room", () => {
     });
 });
 smarthome_1.location("Office", () => {
-    const heater = new devices_1.Outlet("0x000b3cfffef0a996", "Heater Office Light");
+    new devices_1.Outlet("0x000b3cfffef0a996", "Heater Office Light");
 });
 smarthome_1.location("Shed", () => {
     const l1 = new devices_1.Outlet("0x000d6ffffeb1c9dc", "Outside Light");
@@ -69,9 +69,15 @@ smarthome_1.location("Shed", () => {
     smarthome_1.rule([motion1], () => {
         if (!motion1.on)
             return;
-        // const hour = new Date().getHours()
-        // if (hour > 9 && hour < 16) return
+        const hour = new Date().getHours();
+        if (hour > 9 && hour < 16)
+            return;
         l1.setState("on", { forTime: 3 * units_1.MINUTES });
+    });
+    smarthome_1.rule([l1], () => {
+        if (l1.hasBeen("on", { forTime: 3 * units_1.MINUTES })) {
+            l1.turnOff();
+        }
     });
 });
 smarthome_1.location("Toilet", () => {
