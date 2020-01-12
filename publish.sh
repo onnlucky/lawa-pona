@@ -2,12 +2,13 @@
 set -e
 
 error() {
-    git reset --hard || true
     git checkout master || true
     echo "had error, tried to recover"
 }
 trap error ERR
 
+git fetch
+git diff origin/master --exit-code
 git checkout publish
 git reset --hard origin/publish
 git merge -X theirs master -m'merge'
