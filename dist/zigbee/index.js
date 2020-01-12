@@ -118,7 +118,12 @@ function runController(context, callback) {
             }
             const delegate = x(device).__delegate;
             if (delegate && delegate.processor) {
-                log_1.command(device.ieeeAddr, "<--", event.cluster, event.type, event.data, device.modelID);
+                if (event.type === "readResponse" || event.type === "attributeReport") {
+                    log_1.debug(device.ieeeAddr, "<--", event.cluster, event.type, event.data, device.modelID);
+                }
+                else {
+                    log_1.command(device.ieeeAddr, "<--", event.cluster, event.type, event.data, device.modelID);
+                }
                 delegate.processor.receiveCommand(event.cluster, event.type, event.data);
                 return;
             }
