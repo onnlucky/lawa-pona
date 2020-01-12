@@ -69,9 +69,8 @@ smarthome_1.location("Shed", () => {
     smarthome_1.rule([motion1], () => {
         if (!motion1.on)
             return;
-        const hour = new Date().getHours();
-        if (hour > 9 && hour < 16)
-            return;
+        // const hour = new Date().getHours()
+        // if (hour > 9 && hour < 16) return
         l1.setState("on", { forTime: 3 * units_1.MINUTES });
     });
 });

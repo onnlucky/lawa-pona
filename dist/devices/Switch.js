@@ -44,16 +44,30 @@ class ToggleSwitchCommandProcessor extends Device_1.CommandProcessor {
         this.lastTime = 0;
     }
     stateChanged(_state, _external) { }
-    receiveCommand(_cluster, command, _data) {
-        if (command === "commandOn") {
+    receiveCommand(_cluster, command, data) {
+        let button = "none";
+        switch (command) {
+            case "commandOn":
+                button = "on";
+                break;
+            case "commandOff":
+                button = "off";
+                break;
+            case "commandMoveWithOnOff":
+                button = data.movemode === 0 ? "on" : "off";
+                break;
+            default:
+                return;
+        }
+        if (button === "on") {
             const now = Date.now() / 1000;
             const ago = now - this.lastTime;
             this.lastTime = now;
             const count = ago > 2.5 ? 1 : this.state.count + 1;
-            this.state.updateState({ button: "on", count });
+            this.state.updateState({ button, count });
         }
-        else if (command === "commandOff") {
-            this.state.updateState({ button: "off", count: 0 });
+        else if (button === "off") {
+            this.state.updateState({ button, count: 0 });
         }
     }
 }
