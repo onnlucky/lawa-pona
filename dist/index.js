@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const smarthome_1 = require("smarthome");
 const devices_1 = require("devices");
 const Switch_1 = require("devices/Switch");
+const units_1 = require("smarthome/units");
 const home = new smarthome_1.SmartHome();
 smarthome_1.rule([home], () => {
     if (!home.latenight)
@@ -60,7 +61,19 @@ smarthome_1.location("Living Room", () => {
     });
 });
 smarthome_1.location("Office", () => {
-    const heater = new devices_1.Outlet("0x000d6ffffeb1c9dc", "Heater");
+    const heater = new devices_1.Outlet("0x000b3cfffef0a996", "Heater Office Light");
+});
+smarthome_1.location("Shed", () => {
+    const l1 = new devices_1.Outlet("0x000d6ffffeb1c9dc", "Outside Light");
+    const motion1 = new devices_1.MotionSensor("0x14b457fffe6b2ac8", "Motion Sensor");
+    smarthome_1.rule([motion1], () => {
+        if (!motion1.on)
+            return;
+        const hour = new Date().getHours();
+        if (hour > 9 && hour < 16)
+            return;
+        l1.setState("on", { forTime: 3 * units_1.MINUTES });
+    });
 });
 smarthome_1.location("Toilet", () => {
     const t1 = new devices_1.Light("0x086bd7fffe020c74", "Light 1");
