@@ -1,6 +1,7 @@
 import { rule, location, units, SmartHome } from "smarthome"
 import { Light, Dimmer, MotionSensor, Outlet, IkeaRemote, Switch } from "devices"
 import { ToggleSwitch } from "devices/Switch"
+import { MINUTES } from "smarthome/units"
 
 const home = new SmartHome()
 
@@ -58,7 +59,18 @@ location("Living Room", () => {
 })
 
 location("Office", () => {
-    const heater = new Outlet("0x000d6ffffeb1c9dc", "Heater")
+    const heater = new Outlet("0x000b3cfffef0a996", "Heater Office Light")
+})
+
+location("Shed", () => {
+    const l1 = new Outlet("0x000d6ffffeb1c9dc", "Outside Light")
+    const motion1 = new MotionSensor("0x14b457fffe6b2ac8", "Motion Sensor")
+    rule([motion1], () => {
+        if (!motion1.on) return
+        const hour = new Date().getHours()
+        if (hour > 9 && hour < 16) return
+        l1.setState("on", { forTime: 3 * MINUTES })
+    })
 })
 
 location("Toilet", () => {
