@@ -76,7 +76,7 @@ location("Shed", () => {
 location("Toilet", () => {
     const t1 = new Light("0x086bd7fffe020c74", "Light 1")
     const t2 = new Light("0x2", "Light 2")
-    const motion1 = new MotionSensor("0x14b457fffe6b2ac8", "Motion Sensor")
+    const motion1 = new MotionSensor("0x0", "Motion Sensor")
 
     rule([motion1, home], () => {
         if (!motion1.on) return
