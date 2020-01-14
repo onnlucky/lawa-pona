@@ -1,7 +1,5 @@
-import { rule, location, units, SmartHome } from "smarthome"
-import { Light, Dimmer, MotionSensor, Outlet, IkeaRemote, Switch } from "devices"
-import { ToggleSwitch } from "devices/Switch"
-import { MINUTES } from "smarthome/units"
+import { rule, location, units as u, SmartHome } from "smarthome"
+import { Light, Dimmer, MotionSensor, Outlet, IkeaRemote, ToggleSwitch } from "devices"
 
 const home = new SmartHome()
 
@@ -9,7 +7,7 @@ rule([home], () => {
     if (!home.latenight) return
     home.forEachLight(light => {
         if (!light.on) return
-        const timeLeft = 30 * units.MINUTES - light.hasBeenOnFor()
+        const timeLeft = 30 * u.MINUTES - light.hasBeenOnFor()
         if (timeLeft <= 0) {
             light.turnOff()
         } else {
@@ -59,7 +57,20 @@ location("Living Room", () => {
 })
 
 location("Office", () => {
-    new Outlet("0x000b3cfffef0a996", "Heater Office Light")
+    const h1 = new Outlet("0x000b3cfffef0a996", "Heater Office")
+    rule([h1], () => {
+        const hour = new Date().getHours()
+        if (hour > 9 && hour <= 17) {
+            rule.rerunAfter(10 * u.MINUTES)
+            return
+        }
+        const timeLeft = 1.5 * u.HOUR - h1.hasBeenOnFor()
+        if (timeLeft <= 0) {
+            h1.turnOff()
+        } else {
+            rule.rerunAfter(timeLeft)
+        }
+    })
 })
 
 location("Shed", () => {
@@ -68,11 +79,11 @@ location("Shed", () => {
     rule([motion1], () => {
         if (!motion1.on) return
         const hour = new Date().getHours()
-        if (hour > 9 && hour < 16) return
-        l1.setState("on", { forTime: 3 * MINUTES })
+        if (hour > 9 && hour <= 16) return
+        l1.setState("on")
     })
     rule([l1], () => {
-        if (l1.hasBeen("on", { forTime: 3 * MINUTES })) {
+        if (l1.hasBeen("on", { forTime: 3 * u.MINUTES })) {
             l1.turnOff()
         }
     })

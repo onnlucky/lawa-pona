@@ -130,6 +130,13 @@
         send([{ id: device.id, on: device.on, brightness: device.brightness }])
     }
 
+    function showDevice(d) {
+        if (d.on === undefined) return false
+        if (!d.name) return false
+        const name = d.name.toLowerCase()
+        return name.indexOf("light") >= 0 || name.indexOf("heat") >= 0
+    }
+
     const app = new Vue({
         el: "#app",
         data: {
@@ -195,9 +202,7 @@
                         app.smarthome = d
                         return
                     }
-                    if (d.on === undefined) return
-                    if (!d.name) return
-                    if (d.name.toLowerCase().indexOf("light") < 0) return
+                    if (!showDevice(d)) return
                     app.devices.push(d)
                 })
             } else {
