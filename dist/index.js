@@ -2,8 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const smarthome_1 = require("smarthome");
 const devices_1 = require("devices");
-const Switch_1 = require("devices/Switch");
-const units_1 = require("smarthome/units");
 const home = new smarthome_1.SmartHome();
 smarthome_1.rule([home], () => {
     if (!home.latenight)
@@ -39,11 +37,11 @@ smarthome_1.location("Living Room", () => {
             l4.turnOn();
         }
     });
-    const s1 = new Switch_1.ToggleSwitch("0x000d6ffffec5f0e4", "All Off Switch");
-    const s2 = new Switch_1.ToggleSwitch("0xec1bbdfffebd01d3", "All Off Switch");
+    const s1 = new devices_1.ToggleSwitch("0x000d6ffffec5f0e4", "All Off Switch");
+    const s2 = new devices_1.ToggleSwitch("0xec1bbdfffebd01d3", "All Off Switch");
     smarthome_1.rule([s1, s2], () => {
         for (const s of [s1, s2]) {
-            if (s.button === Switch_1.ToggleSwitch.on) {
+            if (s.button === devices_1.ToggleSwitch.on) {
                 if (s.count > 1) {
                     for (const l of lights)
                         l.turnOn();
@@ -53,7 +51,7 @@ smarthome_1.location("Living Room", () => {
                         l.turnOn();
                 }
             }
-            else if (s.button === Switch_1.ToggleSwitch.off) {
+            else if (s.button === devices_1.ToggleSwitch.off) {
                 for (const l of lights)
                     l.turnOff();
             }
@@ -61,7 +59,21 @@ smarthome_1.location("Living Room", () => {
     });
 });
 smarthome_1.location("Office", () => {
-    new devices_1.Outlet("0x000b3cfffef0a996", "Heater Office Light");
+    const h1 = new devices_1.Outlet("0x000b3cfffef0a996", "Heater Office");
+    smarthome_1.rule([h1], () => {
+        const hour = new Date().getHours();
+        if (hour > 9 && hour <= 17) {
+            smarthome_1.rule.rerunAfter(10 * smarthome_1.units.MINUTES);
+            return;
+        }
+        const timeLeft = 1.5 * smarthome_1.units.HOUR - h1.hasBeenOnFor();
+        if (timeLeft <= 0) {
+            h1.turnOff();
+        }
+        else {
+            smarthome_1.rule.rerunAfter(timeLeft);
+        }
+    });
 });
 smarthome_1.location("Shed", () => {
     const l1 = new devices_1.Outlet("0x000d6ffffeb1c9dc", "Outside Light");
@@ -70,12 +82,12 @@ smarthome_1.location("Shed", () => {
         if (!motion1.on)
             return;
         const hour = new Date().getHours();
-        if (hour > 9 && hour < 16)
+        if (hour > 9 && hour <= 16)
             return;
-        l1.setState("on", { forTime: 3 * units_1.MINUTES });
+        l1.setState("on");
     });
     smarthome_1.rule([l1], () => {
-        if (l1.hasBeen("on", { forTime: 3 * units_1.MINUTES })) {
+        if (l1.hasBeen("on", { forTime: 3 * smarthome_1.units.MINUTES })) {
             l1.turnOff();
         }
     });

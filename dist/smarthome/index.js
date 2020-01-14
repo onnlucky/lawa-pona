@@ -9,6 +9,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const ActiveState_1 = require("activestate/ActiveState");
 const ZigbeeDevice_1 = require("zigbee/ZigbeeDevice");
+const devices_1 = require("devices");
 const Context_1 = require("activestate/Context");
 var Links_1 = require("activestate/Links");
 exports.rule = Links_1.rule;
@@ -66,8 +67,26 @@ class SmartHome extends ActiveState_1.ActiveState {
     remove() {
         __current = null;
     }
-    forEachDevice(body) { }
-    forEachLight(body) { }
+    forEachDevice(body) {
+        const context = Context_1.Context.getCurrent();
+        if (!context)
+            return;
+        context.states.forEach(state => {
+            if (!(state instanceof devices_1.Device))
+                return;
+            body(state);
+        });
+    }
+    forEachLight(body) {
+        const context = Context_1.Context.getCurrent();
+        if (!context)
+            return;
+        context.states.forEach(state => {
+            if (!(state instanceof devices_1.Light))
+                return;
+            body(state);
+        });
+    }
     beginLocation(name) {
         this.activeLocation = name;
     }

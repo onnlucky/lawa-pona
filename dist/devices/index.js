@@ -14,4 +14,5 @@ var IkeaRemote_1 = require("./IkeaRemote");
 exports.IkeaRemote = IkeaRemote_1.IkeaRemote;
 var Switch_1 = require("./Switch");
 exports.Switch = Switch_1.Switch;
+exports.ToggleSwitch = Switch_1.ToggleSwitch;
 //# sourceMappingURL=index.js.map
