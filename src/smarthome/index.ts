@@ -69,8 +69,23 @@ export class SmartHome extends ActiveState {
         setInterval(this.updateTime, 5000)
     }
 
-    forEachDevice(body: (device: Device) => void) {}
-    forEachLight(body: (light: Light) => void) {}
+    forEachDevice(body: (device: Device) => void) {
+        const context = Context.getCurrent()
+        if (!context) return
+        context.states.forEach(state => {
+            if (!(state instanceof Device)) return
+            body(state)
+        })
+    }
+
+    forEachLight(body: (light: Light) => void) {
+        const context = Context.getCurrent()
+        if (!context) return
+        context.states.forEach(state => {
+            if (!(state instanceof Light)) return
+            body(state)
+        })
+    }
 
     activeLocation = ""
     beginLocation(name: string) {
