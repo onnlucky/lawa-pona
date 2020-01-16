@@ -29,6 +29,12 @@ export abstract class CommandProcessor<T extends Device> implements ActiveStateL
         this.device.setCommandProcessor(this)
     }
 
+    isIkea(): boolean {
+        const model = this.device.device?.modelID
+        if (!model) return false
+        return model.indexOf("TRADFRI") >= 0
+    }
+
     receiveCommand(_cluster: string, _command: string, _data: any) {}
 
     abstract stateChanged(state: ActiveState, external: boolean): void
