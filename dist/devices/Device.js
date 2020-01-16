@@ -27,6 +27,13 @@ class CommandProcessor {
         this.device = ZigbeeDevice_1.ZigbeeContext.current().getDevice(state.id);
         this.device.setCommandProcessor(this);
     }
+    isIkea() {
+        var _a;
+        const model = (_a = this.device.device) === null || _a === void 0 ? void 0 : _a.modelID;
+        if (!model)
+            return false;
+        return model.indexOf("TRADFRI") >= 0;
+    }
     receiveCommand(_cluster, _command, _data) { }
 }
 exports.CommandProcessor = CommandProcessor;
