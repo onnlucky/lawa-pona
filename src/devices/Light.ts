@@ -55,7 +55,7 @@ class LightCommandProcessor extends CommandProcessor<Light> {
                 if (!inSameRange(this.state.brightness, data.currentLevel, 2)) {
                     change = true
                 }
-                if (!this.state.on && !inSameRange(data.currentLevel, 0, 2)) {
+                if (!this.state.on && !inSameRange(data.currentLevel, 0, 2) && this.isIkea()) {
                     state.on = true
                     change = true
                 }
