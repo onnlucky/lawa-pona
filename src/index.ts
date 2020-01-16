@@ -74,17 +74,22 @@ location("Office", () => {
 })
 
 location("Shed", () => {
-    const l1 = new Outlet("0x000d6ffffeb1c9dc", "Outside Light")
+    const l1 = new Outlet("0x000d6ffffeb1c9dc", "Outside Light Shed")
+    const l2 = new Light("0x00158d0002c26ef6", "Outside Light Pagode")
     const motion1 = new MotionSensor("0x14b457fffe6b2ac8", "Motion Sensor")
     rule([motion1], () => {
         if (!motion1.on) return
         const hour = new Date().getHours()
         if (hour > 9 && hour <= 16) return
         l1.setState("on")
+        l2.setState("on")
     })
-    rule([l1], () => {
+    rule([l1, l2], () => {
         if (l1.hasBeen("on", { forTime: 3 * u.MINUTES })) {
             l1.turnOff()
+        }
+        if (l2.hasBeen("on", { forTime: 3 * u.MINUTES })) {
+            l2.turnOff()
         }
     })
 })
