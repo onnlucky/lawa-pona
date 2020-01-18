@@ -76,7 +76,7 @@ location("Office", () => {
 location("Shed", () => {
     const l1 = new Outlet("0x000d6ffffeb1c9dc", "Outside Light Shed")
     const l2 = new Light("0x00158d0002c26ef6", "Outside Light Pagode")
-    const motion1 = new MotionSensor("0x14b457fffe6b2ac8", "Motion Sensor")
+    const motion1 = new MotionSensor("0x14b457fffe6b2ac8", "Shed Motion Sensor")
     rule([motion1], () => {
         if (!motion1.on) return
         const hour = new Date().getHours()
@@ -94,10 +94,26 @@ location("Shed", () => {
     })
 })
 
+location("Front Door", () => {
+    const l1 = new Light("0x0", "Outside Light Front Door")
+    const motion1 = new MotionSensor("0x14b457fffe4c079a", "Front Door Motion Sensor")
+    rule([motion1], () => {
+        if (!motion1.on) return
+        const hour = new Date().getHours()
+        if (hour > 9 && hour <= 16) return
+        l1.setState("on")
+    })
+    rule([l1], () => {
+        if (l1.hasBeen("on", { forTime: 3 * u.MINUTES })) {
+            l1.turnOff()
+        }
+    })
+})
+
 location("Toilet", () => {
     const t1 = new Light("0x086bd7fffe020c74", "Light 1")
-    const t2 = new Light("0x2", "Light 2")
-    const motion1 = new MotionSensor("0x0", "Motion Sensor")
+    const t2 = new Light("0x1", "Light 2")
+    const motion1 = new MotionSensor("0x2", "Motion Sensor")
 
     rule([motion1, home], () => {
         if (!motion1.on) return
