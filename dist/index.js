@@ -78,7 +78,7 @@ smarthome_1.location("Office", () => {
 smarthome_1.location("Shed", () => {
     const l1 = new devices_1.Outlet("0x000d6ffffeb1c9dc", "Outside Light Shed");
     const l2 = new devices_1.Light("0x00158d0002c26ef6", "Outside Light Pagode");
-    const motion1 = new devices_1.MotionSensor("0x14b457fffe6b2ac8", "Motion Sensor");
+    const motion1 = new devices_1.MotionSensor("0x14b457fffe6b2ac8", "Shed Motion Sensor");
     smarthome_1.rule([motion1], () => {
         if (!motion1.on)
             return;
@@ -97,10 +97,27 @@ smarthome_1.location("Shed", () => {
         }
     });
 });
+smarthome_1.location("Front Door", () => {
+    const l1 = new devices_1.Light("0x0", "Outside Light Front Door");
+    const motion1 = new devices_1.MotionSensor("0x14b457fffe4c079a", "Front Door Motion Sensor");
+    smarthome_1.rule([motion1], () => {
+        if (!motion1.on)
+            return;
+        const hour = new Date().getHours();
+        if (hour > 9 && hour <= 16)
+            return;
+        l1.setState("on");
+    });
+    smarthome_1.rule([l1], () => {
+        if (l1.hasBeen("on", { forTime: 3 * smarthome_1.units.MINUTES })) {
+            l1.turnOff();
+        }
+    });
+});
 smarthome_1.location("Toilet", () => {
     const t1 = new devices_1.Light("0x086bd7fffe020c74", "Light 1");
-    const t2 = new devices_1.Light("0x2", "Light 2");
-    const motion1 = new devices_1.MotionSensor("0x0", "Motion Sensor");
+    const t2 = new devices_1.Light("0x1", "Light 2");
+    const motion1 = new devices_1.MotionSensor("0x2", "Motion Sensor");
     smarthome_1.rule([motion1, home], () => {
         if (!motion1.on)
             return;
