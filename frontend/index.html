@@ -134,7 +134,7 @@
         if (d.on === undefined) return false
         if (!d.name) return false
         const name = d.name.toLowerCase()
-        return name.indexOf("light") >= 0 || name.indexOf("heat") >= 0
+        return name.indexOf("light") >= 0 || name.indexOf("heat") >= 0 || name.indexOf("vent") >= 0
     }
 
     const app = new Vue({
