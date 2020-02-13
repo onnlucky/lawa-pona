@@ -123,3 +123,12 @@ location("Toilet", () => {
         t2.setState("on", { forTime: 125, brightness })
     })
 })
+
+location("House", () => {
+    const vent = new Outlet("0x086bd7fffe5c7b72", "Vent High")
+    rule([vent], () => {
+        if (vent.hasBeen("on", { forTime: 45 * u.MINUTES })) {
+            vent.turnOff()
+        }
+    })
+})
