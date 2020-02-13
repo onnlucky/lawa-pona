@@ -128,4 +128,12 @@ smarthome_1.location("Toilet", () => {
         t2.setState("on", { forTime: 125, brightness });
     });
 });
+smarthome_1.location("House", () => {
+    const vent = new devices_1.Outlet("0x086bd7fffe5c7b72", "Vent High");
+    smarthome_1.rule([vent], () => {
+        if (vent.hasBeen("on", { forTime: 45 * smarthome_1.units.MINUTES })) {
+            vent.turnOff();
+        }
+    });
+});
 //# sourceMappingURL=index.js.map
