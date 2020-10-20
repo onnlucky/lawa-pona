@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.MotionSensor = void 0;
 const Device_1 = require("./Device");
 class MotionSensor extends Device_1.OnOffDevice {
     constructor() {

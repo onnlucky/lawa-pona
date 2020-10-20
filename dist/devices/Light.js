@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Light = void 0;
 const Device_1 = require("./Device");
 const Context_1 = require("activestate/Context");
 class Light extends Device_1.OnOffDevice {

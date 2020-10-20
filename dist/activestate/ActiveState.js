@@ -11,6 +11,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ActiveState = exports.MetaState = exports.hasOwnProperty = void 0;
 const Context_1 = require("./Context");
 const Links_1 = require("./Links");
 const blacklist = {

@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.WEEKDAYS = exports.PERCENT = exports.HOURS = exports.HOUR = exports.MINUTES = exports.MINUTE = exports.SECONDS = exports.SECOND = void 0;
 exports.SECOND = 1;
 exports.SECONDS = exports.SECOND;
 exports.MINUTE = 60;

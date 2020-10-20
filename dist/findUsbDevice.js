@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.findUsbDevice = exports.linuxOutputParser = exports.osxOutputParser = void 0;
 const child_process_1 = require("child_process");
 const osxCommand = "ioreg -r -c IOUSBHostDevice -l";
 function osxOutputParser(output) {

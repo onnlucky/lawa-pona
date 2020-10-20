@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Sheperd = exports.SheperdEndpoint = exports.buildCommands = void 0;
 function buildCommand(mapped, command, value, commands) {
     const converter = mapped.toZigbee.find((c) => c.key.includes(command));
     if (!converter) {

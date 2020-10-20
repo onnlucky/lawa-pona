@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Dimmer = void 0;
 const Device_1 = require("./Device");
 const Links_1 = require("activestate/Links");
 class Dimmer extends Device_1.Device {

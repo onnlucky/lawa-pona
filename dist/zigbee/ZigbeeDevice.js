@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ZigbeeContext = exports.ZigbeeDevice = void 0;
 const SheperdCompat_1 = require("./SheperdCompat");
 const zigbee_1 = require("zigbee");
 const log_1 = require("log");

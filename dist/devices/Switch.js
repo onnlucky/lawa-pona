@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ToggleSwitch = exports.Switch = void 0;
 const Device_1 = require("./Device");
 const Links_1 = require("activestate/Links");
 class Switch extends Device_1.OnOffDevice {
