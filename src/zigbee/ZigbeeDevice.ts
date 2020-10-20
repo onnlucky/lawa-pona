@@ -25,7 +25,7 @@ export class ZigbeeDevice {
         if (!device || !mapped) return
         const endpoint = device.getEndpoint(1)
         const commands = buildCommands(mapped, object)
-        commands.forEach(async c => {
+        commands.forEach(async (c) => {
             if (c.cmdType !== "functional") return
             try {
                 await endpoint.command(c.cid, c.cmd, c.zclData, c.cfg)
@@ -62,7 +62,7 @@ export class ZigbeeContext {
     }
 
     offline() {
-        Object.values(this.devicesByAddr).forEach(d => {
+        Object.values(this.devicesByAddr).forEach((d) => {
             d.device = null
             d.mapped = null
         })
@@ -71,7 +71,7 @@ export class ZigbeeContext {
     bind() {
         if (__current) throw Error("cannot bind zigbee twice")
 
-        startZigbeeController(this, error => {
+        startZigbeeController(this, (error) => {
             if (error) {
                 log(error)
                 this.offline()
@@ -79,7 +79,7 @@ export class ZigbeeContext {
             }
 
             const known: ZigbeeDevice[] = []
-            Object.values(this.devicesByAddr).forEach(d => {
+            Object.values(this.devicesByAddr).forEach((d) => {
                 const zigbee = d.device
                 const model = zigbee ? zigbee.modelID : "unknown"
                 const configured = zigbee ? !!zigbee.meta.configured : "unknown"
@@ -91,7 +91,7 @@ export class ZigbeeContext {
                     known.push(d)
                 }
             })
-            known.forEach(d => {
+            known.forEach((d) => {
                 const zigbee = d.device
                 const model = zigbee ? zigbee.modelID : "unknown"
                 const configured = zigbee ? !!zigbee.meta.configured : "unknown"
@@ -99,6 +99,12 @@ export class ZigbeeContext {
             })
         })
         __current = this
+    }
+
+    hasDevice(ieeeAddr: string): boolean {
+        const device = this.devicesByAddr[ieeeAddr]
+        if (!device) return false
+        return !!device.processor
     }
 
     getDevice(ieeeAddr: string): ZigbeeDevice {
