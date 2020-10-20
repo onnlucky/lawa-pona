@@ -6,7 +6,7 @@ import { Context } from "activestate/Context"
 
 jest.mock("../zigbee/ZigbeeDevice")
 
-const deviceCommand = jest.fn(function(this: ZigbeeDevice) {
+const deviceCommand = jest.fn(function (this: ZigbeeDevice) {
     this.lastCommand = Context.current().time
 })
 
@@ -24,7 +24,7 @@ function device(ieeeAddr: string): ZigbeeDevice {
         setDevice(device: any, mapped: any) {
             this.device = device
             this.mapped = mapped
-        }
+        },
     }
 }
 
@@ -35,7 +35,10 @@ const mockZigbeeContext = {
     getDevice(ieeeAddr: string) {
         if (this.devicesByAddr[ieeeAddr]) return this.devicesByAddr[ieeeAddr]
         return (this.devicesByAddr[ieeeAddr] = device(ieeeAddr))
-    }
+    },
+    hasDevice(ieeeAddr: string) {
+        return !!this.devicesByAddr[ieeeAddr]
+    },
 }
 
 ZigbeeContext.current = jest.fn(() => {
