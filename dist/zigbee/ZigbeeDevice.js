@@ -66,7 +66,7 @@ class ZigbeeContext {
         return __current;
     }
     offline() {
-        Object.values(this.devicesByAddr).forEach(d => {
+        Object.values(this.devicesByAddr).forEach((d) => {
             d.device = null;
             d.mapped = null;
         });
@@ -74,14 +74,14 @@ class ZigbeeContext {
     bind() {
         if (__current)
             throw Error("cannot bind zigbee twice");
-        zigbee_1.start(this, error => {
+        zigbee_1.start(this, (error) => {
             if (error) {
                 log_1.log(error);
                 this.offline();
                 return;
             }
             const known = [];
-            Object.values(this.devicesByAddr).forEach(d => {
+            Object.values(this.devicesByAddr).forEach((d) => {
                 const zigbee = d.device;
                 const model = zigbee ? zigbee.modelID : "unknown";
                 const configured = zigbee ? !!zigbee.meta.configured : "unknown";
@@ -95,7 +95,7 @@ class ZigbeeContext {
                     known.push(d);
                 }
             });
-            known.forEach(d => {
+            known.forEach((d) => {
                 const zigbee = d.device;
                 const model = zigbee ? zigbee.modelID : "unknown";
                 const configured = zigbee ? !!zigbee.meta.configured : "unknown";
@@ -103,6 +103,12 @@ class ZigbeeContext {
             });
         });
         __current = this;
+    }
+    hasDevice(ieeeAddr) {
+        const device = this.devicesByAddr[ieeeAddr];
+        if (!device)
+            return false;
+        return !!device.processor;
     }
     getDevice(ieeeAddr) {
         let device = this.devicesByAddr[ieeeAddr];

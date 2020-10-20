@@ -22,7 +22,7 @@ function device(ieeeAddr) {
         setDevice(device, mapped) {
             this.device = device;
             this.mapped = mapped;
-        }
+        },
     };
 }
 const mockZigbeeContext = {
@@ -33,7 +33,10 @@ const mockZigbeeContext = {
         if (this.devicesByAddr[ieeeAddr])
             return this.devicesByAddr[ieeeAddr];
         return (this.devicesByAddr[ieeeAddr] = device(ieeeAddr));
-    }
+    },
+    hasDevice(ieeeAddr) {
+        return !!this.devicesByAddr[ieeeAddr];
+    },
 };
 ZigbeeDevice_1.ZigbeeContext.current = jest.fn(() => {
     return mockZigbeeContext;

@@ -20,7 +20,7 @@ const zigbee_shepherd_converters_1 = __importDefault(require("zigbee-shepherd-co
 const log_1 = require("log");
 const findUsbDevice_1 = require("findUsbDevice");
 function sleep(seconds) {
-    return new Promise(resolve => setTimeout(resolve, seconds * 1000));
+    return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 }
 function x(device) {
     return device;
@@ -28,7 +28,7 @@ function x(device) {
 const defaultConfiguration = {
     minimumReportInterval: 3,
     maximumReportInterval: 300,
-    reportableChange: 0
+    reportableChange: 0,
 };
 const reportingClusters = {
     genOnOff: [Object.assign(Object.assign({ attribute: "onOff" }, defaultConfiguration), { minimumReportInterval: 0 })],
@@ -36,12 +36,12 @@ const reportingClusters = {
     lightingColorCtrl: [
         Object.assign({ attribute: "colorTemperature" }, defaultConfiguration),
         Object.assign({ attribute: "currentX" }, defaultConfiguration),
-        Object.assign({ attribute: "currentY" }, defaultConfiguration)
+        Object.assign({ attribute: "currentY" }, defaultConfiguration),
     ],
     closuresWindowCovering: [
         Object.assign({ attribute: "currentPositionLiftPercentage" }, defaultConfiguration),
-        Object.assign({ attribute: "currentPositionTiltPercentage" }, defaultConfiguration)
-    ]
+        Object.assign({ attribute: "currentPositionTiltPercentage" }, defaultConfiguration),
+    ],
 };
 function start(context, callback) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -64,31 +64,31 @@ function runController(context, callback) {
         const serialPort = yield findUsbDevice_1.findUsbDevice();
         const controller = new zigbee_herdsman_1.Controller({
             databasePath: "data.json",
-            serialPort: { path: serialPort }
+            serialPort: { path: serialPort },
         });
         let running = true;
         let exit;
-        const exitPromise = new Promise(resolve => (exit = resolve));
+        const exitPromise = new Promise((resolve) => (exit = resolve));
         controller.on(zigbee_herdsman_1.Events.adapterDisconnected, (event) => {
             log_1.debug("Events.adapterDisconnected", event);
             running = false;
             exit();
         });
         controller.on(zigbee_herdsman_1.Events.deviceAnnounce, (event) => {
-            try {
-                log_1.command("Events.deviceAnnounce", event.device.ieeeAddr, event.device.modelID);
-            }
-            catch (e) {
-                log_1.command("Events.deviceAnnounce", event);
-            }
+            var _a, _b, _c, _d;
+            log_1.command("Events.deviceAnnounce", (_a = event === null || event === void 0 ? void 0 : event.device) === null || _a === void 0 ? void 0 : _a.ieeeAddr, (_b = event === null || event === void 0 ? void 0 : event.device) === null || _b === void 0 ? void 0 : _b.modelID);
             const device = event.device;
             if (!device)
                 return;
-            if (!device.meta.configured) {
-                if (!triedConfiguring.has(device.ieeeAddr)) {
-                    triedConfiguring.add(device.ieeeAddr);
-                    configureDevice(event.device);
-                }
+            if (device.meta.configured)
+                return;
+            if (!context.hasDevice(device.ieeeAddr)) {
+                log_1.log("Not configuring device because it is not defined:", (_c = event === null || event === void 0 ? void 0 : event.device) === null || _c === void 0 ? void 0 : _c.ieeeAddr, (_d = event === null || event === void 0 ? void 0 : event.device) === null || _d === void 0 ? void 0 : _d.modelID);
+                return;
+            }
+            if (!triedConfiguring.has(device.ieeeAddr)) {
+                triedConfiguring.add(device.ieeeAddr);
+                configureDevice(event.device);
             }
         });
         controller.on(zigbee_herdsman_1.Events.deviceInterview, (event) => {
@@ -173,7 +173,7 @@ function runController(context, callback) {
                 }
             }
         }));
-        const promises = controller.getDevices({}).map(device => {
+        const promises = controller.getDevices({}).map((device) => {
             if (device.type === "Coordinator")
                 return;
             if (!device.interviewCompleted) {
@@ -211,7 +211,7 @@ function runController(context, callback) {
                                 return;
                             if (processor) {
                                 log_1.debug("requesting current status:", device.ieeeAddr, device.modelID, cluster);
-                                const result = yield endpoint.read(cluster, config.map(c => c.attribute));
+                                const result = yield endpoint.read(cluster, config.map((c) => c.attribute));
                                 log_1.debug(device.ieeeAddr, "<--", cluster, "attributeReport", result, device.modelID);
                                 processor.receiveCommand(cluster, "attributeReport", result);
                             }

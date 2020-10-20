@@ -9,5 +9,5 @@ exports.log = debug_1.default("lawa:log");
 exports.error = debug_1.default("lawa:error");
 exports.debug = debug_1.default("lawa:debug");
 exports.command = debug_1.default("lawa:command");
-debug_1.default.enable("lawa:log,lawa:error,lawa:command");
+debug_1.default.enable("lawa:log,lawa:error,lawa:command,lawa:debug");
 //# sourceMappingURL=log.js.map
