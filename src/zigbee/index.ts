@@ -12,7 +12,7 @@ import { Sheperd, SheperdEndpoint, MappedDevice } from "./SheperdCompat"
 import zigbeeShepherdConverters from "zigbee-shepherd-converters"
 import { ZigbeeDevice, ZigbeeContext } from "./ZigbeeDevice"
 
-import { error, log, debug, command } from "log"
+import { error, log, debug, command, onevent } from "log"
 import { findUsbDevice } from "findUsbDevice"
 import { Device } from "zigbee-herdsman/dist/controller/model"
 
@@ -73,42 +73,43 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
     let exit: Function
     const exitPromise = new Promise((resolve) => (exit = resolve))
     controller.on(Events.adapterDisconnected, (event: any) => {
-        debug("Events.adapterDisconnected", event)
+        onevent("Events.adapterDisconnected", event?.device?.ieeeAddr ?? event?.ieeeAddr, event)
         running = false
         exit()
     })
 
     controller.on(Events.deviceAnnounce, (event: AnnounceEvent) => {
-        command("Events.deviceAnnounce", event?.device?.ieeeAddr, event?.device?.modelID)
+        onevent("Events.deviceAnnounce", event?.device?.ieeeAddr, event?.device?.modelID)
 
         const device = event.device
         if (!device) return
         if (device.meta.configured) return
 
         if (!context.hasDevice(device.ieeeAddr)) {
-            log("Not configuring device because it is not defined:", event?.device?.ieeeAddr, event?.device?.modelID)
+            log("Not configuring device because it is not defined:", device.ieeeAddr, device.modelID)
             return
         }
 
         if (!triedConfiguring.has(device.ieeeAddr)) {
             triedConfiguring.add(device.ieeeAddr)
-            configureDevice(event.device)
+            configureDevice(device)
         }
     })
 
     controller.on(Events.deviceInterview, (event: InterviewEvent) => {
-        debug("Events.deviceInterview", event.device.ieeeAddr, event.device.getEndpoints().length, event.device.modelID)
-        configureDevice(event.device)
+        const device = event.device
+        onevent("Events.deviceInterview", device.ieeeAddr, device.getEndpoints().length, device.modelID)
+        configureDevice(device)
     })
 
     controller.on(Events.deviceJoined, (event: JoinedEvent) => {
-        debug("Events.deviceJoined", event.device.ieeeAddr, event.device.modelID)
+        onevent("Events.deviceJoined", event.device.ieeeAddr, event.device.modelID)
     })
 
     controller.on(Events.deviceLeave, (event: LeaveEvent) => {
         triedConfiguring.delete(event.ieeeAddr)
         const device = controller.getDeviceByAddress(event.ieeeAddr)
-        debug("Events.deviceLeave", event.ieeeAddr, device ? device.modelID : "unknown")
+        onevent("Events.deviceLeave", event.ieeeAddr, device ? device.modelID : "unknown")
         if (device) {
             device.removeFromDatabase()
         }
@@ -118,13 +119,7 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
     controller.on(Events.message, (event: MessageEvent) => {
         const device = event.device
         if (!device.meta.configured) {
-            debug(
-                "Events.message",
-                event.type,
-                event.device.ieeeAddr,
-                event.device.getEndpoints().length,
-                event.device.modelID
-            )
+            onevent("Events.message", event.type, device.ieeeAddr, device.getEndpoints().length, device.modelID)
             if (!triedConfiguring.has(device.ieeeAddr)) {
                 triedConfiguring.add(device.ieeeAddr)
                 configureDevice(event.device)
@@ -293,19 +288,23 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
         }
 
         debug(device.ieeeAddr, "doing configuration...")
-        mapped.configure(device.ieeeAddr, sheperd, sheperdCoordinator, (ok: any, error: any) => {
-            if (!ok) {
-                error(device.ieeeAddr, "configuration failed:", error, device.modelID)
-                device.meta.configured = false
-                device.save()
-                return
-            }
+        try {
+            mapped.configure(device.ieeeAddr, sheperd, sheperdCoordinator, (ok: any, error: any) => {
+                if (!ok) {
+                    error(device.ieeeAddr, "configuration failed:", error, device.modelID)
+                    device.meta.configured = false
+                    device.save()
+                    return
+                }
 
-            log("configured device:", device.ieeeAddr, device.modelID)
-            addDevice(device, mapped)
-        })
-        device.meta.configured = true
-        device.save()
+                log("configured device:", device.ieeeAddr, device.modelID)
+                addDevice(device, mapped)
+            })
+            device.meta.configured = true
+            device.save()
+        } catch (e) {
+            error("error mapped.configure:", e)
+        }
     }
 
     await exitPromise
