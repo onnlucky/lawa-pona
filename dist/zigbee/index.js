@@ -70,38 +70,40 @@ function runController(context, callback) {
         let exit;
         const exitPromise = new Promise((resolve) => (exit = resolve));
         controller.on(zigbee_herdsman_1.Events.adapterDisconnected, (event) => {
-            log_1.debug("Events.adapterDisconnected", event);
+            var _a, _b;
+            log_1.onevent("Events.adapterDisconnected", (_b = (_a = event === null || event === void 0 ? void 0 : event.device) === null || _a === void 0 ? void 0 : _a.ieeeAddr) !== null && _b !== void 0 ? _b : event === null || event === void 0 ? void 0 : event.ieeeAddr, event);
             running = false;
             exit();
         });
         controller.on(zigbee_herdsman_1.Events.deviceAnnounce, (event) => {
-            var _a, _b, _c, _d;
-            log_1.command("Events.deviceAnnounce", (_a = event === null || event === void 0 ? void 0 : event.device) === null || _a === void 0 ? void 0 : _a.ieeeAddr, (_b = event === null || event === void 0 ? void 0 : event.device) === null || _b === void 0 ? void 0 : _b.modelID);
+            var _a, _b;
+            log_1.onevent("Events.deviceAnnounce", (_a = event === null || event === void 0 ? void 0 : event.device) === null || _a === void 0 ? void 0 : _a.ieeeAddr, (_b = event === null || event === void 0 ? void 0 : event.device) === null || _b === void 0 ? void 0 : _b.modelID);
             const device = event.device;
             if (!device)
                 return;
             if (device.meta.configured)
                 return;
             if (!context.hasDevice(device.ieeeAddr)) {
-                log_1.log("Not configuring device because it is not defined:", (_c = event === null || event === void 0 ? void 0 : event.device) === null || _c === void 0 ? void 0 : _c.ieeeAddr, (_d = event === null || event === void 0 ? void 0 : event.device) === null || _d === void 0 ? void 0 : _d.modelID);
+                log_1.log("Not configuring device because it is not defined:", device.ieeeAddr, device.modelID);
                 return;
             }
             if (!triedConfiguring.has(device.ieeeAddr)) {
                 triedConfiguring.add(device.ieeeAddr);
-                configureDevice(event.device);
+                configureDevice(device);
             }
         });
         controller.on(zigbee_herdsman_1.Events.deviceInterview, (event) => {
-            log_1.debug("Events.deviceInterview", event.device.ieeeAddr, event.device.getEndpoints().length, event.device.modelID);
-            configureDevice(event.device);
+            const device = event.device;
+            log_1.onevent("Events.deviceInterview", device.ieeeAddr, device.getEndpoints().length, device.modelID);
+            configureDevice(device);
         });
         controller.on(zigbee_herdsman_1.Events.deviceJoined, (event) => {
-            log_1.debug("Events.deviceJoined", event.device.ieeeAddr, event.device.modelID);
+            log_1.onevent("Events.deviceJoined", event.device.ieeeAddr, event.device.modelID);
         });
         controller.on(zigbee_herdsman_1.Events.deviceLeave, (event) => {
             triedConfiguring.delete(event.ieeeAddr);
             const device = controller.getDeviceByAddress(event.ieeeAddr);
-            log_1.debug("Events.deviceLeave", event.ieeeAddr, device ? device.modelID : "unknown");
+            log_1.onevent("Events.deviceLeave", event.ieeeAddr, device ? device.modelID : "unknown");
             if (device) {
                 device.removeFromDatabase();
             }
@@ -110,7 +112,7 @@ function runController(context, callback) {
         controller.on(zigbee_herdsman_1.Events.message, (event) => {
             const device = event.device;
             if (!device.meta.configured) {
-                log_1.debug("Events.message", event.type, event.device.ieeeAddr, event.device.getEndpoints().length, event.device.modelID);
+                log_1.onevent("Events.message", event.type, device.ieeeAddr, device.getEndpoints().length, device.modelID);
                 if (!triedConfiguring.has(device.ieeeAddr)) {
                     triedConfiguring.add(device.ieeeAddr);
                     configureDevice(event.device);
@@ -268,18 +270,23 @@ function runController(context, callback) {
                 return;
             }
             log_1.debug(device.ieeeAddr, "doing configuration...");
-            mapped.configure(device.ieeeAddr, sheperd, sheperdCoordinator, (ok, error) => {
-                if (!ok) {
-                    error(device.ieeeAddr, "configuration failed:", error, device.modelID);
-                    device.meta.configured = false;
-                    device.save();
-                    return;
-                }
-                log_1.log("configured device:", device.ieeeAddr, device.modelID);
-                addDevice(device, mapped);
-            });
-            device.meta.configured = true;
-            device.save();
+            try {
+                mapped.configure(device.ieeeAddr, sheperd, sheperdCoordinator, (ok, error) => {
+                    if (!ok) {
+                        error(device.ieeeAddr, "configuration failed:", error, device.modelID);
+                        device.meta.configured = false;
+                        device.save();
+                        return;
+                    }
+                    log_1.log("configured device:", device.ieeeAddr, device.modelID);
+                    addDevice(device, mapped);
+                });
+                device.meta.configured = true;
+                device.save();
+            }
+            catch (e) {
+                log_1.error("error mapped.configure:", e);
+            }
         }
         yield exitPromise;
     });
