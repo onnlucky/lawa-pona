@@ -137,10 +137,11 @@ function runController(context, callback) {
         });
         yield controller.start();
         controller.permitJoin(true);
+        const version = yield controller.getCoordinatorVersion();
         const sheperd = new SheperdCompat_1.Sheperd(controller);
         const coordinator = controller.getDevice({ type: "Coordinator" }).getEndpoint(1);
         const sheperdCoordinator = new SheperdCompat_1.SheperdEndpoint(coordinator);
-        log_1.log("...started...");
+        log_1.log("...started...", version);
         setTimeout(() => __awaiter(this, void 0, void 0, function* () {
             while (running) {
                 yield sleep(10);
