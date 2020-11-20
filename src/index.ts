@@ -93,7 +93,7 @@ location("Shed", () => {
         }
     })
 
-    const l3 = new Outlet("0x90fd9ffffea7fa9f", "Christmas Lights")
+    const l3 = new Outlet("0x086bd7fffe59a16b", "Christmas Lights")
     const button1 = new ToggleSwitch("0x90fd9ffffea7fa8f", "Christmas Lights Button")
     rule([button1], () => {
         if (button1.button === ToggleSwitch.on) {
