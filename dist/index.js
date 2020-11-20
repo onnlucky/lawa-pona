@@ -96,7 +96,7 @@ smarthome_1.location("Shed", () => {
             l2.turnOff();
         }
     });
-    const l3 = new devices_1.Outlet("0x90fd9ffffea7fa9f", "Christmas Lights");
+    const l3 = new devices_1.Outlet("0x086bd7fffe59a16b", "Christmas Lights");
     const button1 = new devices_1.ToggleSwitch("0x90fd9ffffea7fa8f", "Christmas Lights Button");
     smarthome_1.rule([button1], () => {
         if (button1.button === devices_1.ToggleSwitch.on) {
