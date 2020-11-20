@@ -6,7 +6,7 @@ const home = new smarthome_1.SmartHome();
 smarthome_1.rule([home], () => {
     if (!home.latenight)
         return;
-    home.forEachLight(light => {
+    home.forEachLight((light) => {
         if (!light.on)
             return;
         const timeLeft = 30 * smarthome_1.units.MINUTES - light.hasBeenOnFor();
@@ -89,11 +89,35 @@ smarthome_1.location("Shed", () => {
         l2.setState("on");
     });
     smarthome_1.rule([l1, l2], () => {
-        if (l1.hasBeen("on", { forTime: 3 * smarthome_1.units.MINUTES })) {
+        if (l1.hasBeen("on", { forTime: 15 * smarthome_1.units.MINUTES })) {
             l1.turnOff();
         }
-        if (l2.hasBeen("on", { forTime: 3 * smarthome_1.units.MINUTES })) {
+        if (l2.hasBeen("on", { forTime: 15 * smarthome_1.units.MINUTES })) {
             l2.turnOff();
+        }
+    });
+    const l3 = new devices_1.Outlet("0x90fd9ffffea7fa8f", "Christmas Lights");
+    const button1 = new devices_1.ToggleSwitch("0x90fd9ffffea7fa8f", "Christmas Lights Button");
+    smarthome_1.rule([button1], () => {
+        if (button1.button === devices_1.ToggleSwitch.on) {
+            l3.turnOn();
+        }
+        else if (button1.button === devices_1.ToggleSwitch.off) {
+            l3.turnOff();
+        }
+    });
+    smarthome_1.rule([l3], () => {
+        const hour = new Date().getHours();
+        if (hour >= 16 && hour <= 23) {
+            smarthome_1.rule.rerunAfter(10 * smarthome_1.units.MINUTES);
+            return;
+        }
+        const timeLeft = 1 * smarthome_1.units.HOUR - l3.hasBeenOnFor();
+        if (timeLeft <= 0) {
+            l3.turnOff();
+        }
+        else {
+            smarthome_1.rule.rerunAfter(timeLeft);
         }
     });
 });
