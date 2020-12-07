@@ -26,8 +26,9 @@ location("Living Room", () => {
 
     const l3 = new Outlet("0x000d6ffffedaaa1b", "TV Light")
     const l4 = new Outlet("0x000d6ffffed63ea9", "Reading Light")
+    const l5 = new Outlet("0x000d6ffffeb1c9dc", "Christmas Tree")
 
-    const lights = [l1, l2, l3, l4]
+    const lights = [l1, l2, l3, l4, l5]
 
     rule([remote], () => {
         if (remote.button === IkeaRemote.cycleLeft) {
@@ -47,7 +48,7 @@ location("Living Room", () => {
                 if (s.count > 1) {
                     for (const l of lights) l.turnOn()
                 } else {
-                    for (const l of [l1, l2]) l.turnOn()
+                    for (const l of [l1, l2, l5]) l.turnOn()
                 }
             } else if (s.button === ToggleSwitch.off) {
                 for (const l of lights) l.turnOff()
@@ -74,7 +75,8 @@ location("Office", () => {
 })
 
 location("Shed", () => {
-    const l1 = new Outlet("0x000d6ffffeb1c9dc", "Outside Light Shed")
+    // const l1 = new Outlet("0x000d6ffffeb1c9dc", "Outside Light Shed")
+    const l1 = new Outlet("0x1111111111111111", "Outside Light Shed")
     const l2 = new Light("0x00158d0002c26ef6", "Outside Light Pagode")
     const motion1 = new MotionSensor("0x14b457fffe6b2ac8", "Shed Motion Sensor")
     rule([motion1], () => {
