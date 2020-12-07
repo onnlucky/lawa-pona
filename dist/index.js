@@ -26,7 +26,8 @@ smarthome_1.location("Living Room", () => {
     remote.connectTo(l2);
     const l3 = new devices_1.Outlet("0x000d6ffffedaaa1b", "TV Light");
     const l4 = new devices_1.Outlet("0x000d6ffffed63ea9", "Reading Light");
-    const lights = [l1, l2, l3, l4];
+    const l5 = new devices_1.Outlet("0x000d6ffffeb1c9dc", "Christmas Tree");
+    const lights = [l1, l2, l3, l4, l5];
     smarthome_1.rule([remote], () => {
         if (remote.button === devices_1.IkeaRemote.cycleLeft) {
             l3.turnOff();
@@ -47,7 +48,7 @@ smarthome_1.location("Living Room", () => {
                         l.turnOn();
                 }
                 else {
-                    for (const l of [l1, l2])
+                    for (const l of [l1, l2, l5])
                         l.turnOn();
                 }
             }
@@ -76,7 +77,8 @@ smarthome_1.location("Office", () => {
     });
 });
 smarthome_1.location("Shed", () => {
-    const l1 = new devices_1.Outlet("0x000d6ffffeb1c9dc", "Outside Light Shed");
+    // const l1 = new Outlet("0x000d6ffffeb1c9dc", "Outside Light Shed")
+    const l1 = new devices_1.Outlet("0x1111111111111111", "Outside Light Shed");
     const l2 = new devices_1.Light("0x00158d0002c26ef6", "Outside Light Pagode");
     const motion1 = new devices_1.MotionSensor("0x14b457fffe6b2ac8", "Shed Motion Sensor");
     smarthome_1.rule([motion1], () => {
