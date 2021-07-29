@@ -82,7 +82,7 @@ export class ZigbeeContext {
             Object.values(this.devicesByAddr).forEach((d) => {
                 const zigbee = d.device
                 const model = zigbee ? zigbee.modelID : "unknown"
-                const configured = zigbee ? !!zigbee.meta.configured : "unknown"
+                const configured = zigbee ? !!zigbee["meta"].configured : "unknown"
                 if (!d.processor) {
                     log("unused device:", d.ieeeAddr, "'" + model + "', configured:", configured)
                 } else if (!d.device) {
@@ -94,7 +94,7 @@ export class ZigbeeContext {
             known.forEach((d) => {
                 const zigbee = d.device
                 const model = zigbee ? zigbee.modelID : "unknown"
-                const configured = zigbee ? !!zigbee.meta.configured : "unknown"
+                const configured = zigbee ? !!zigbee["meta"].configured : "unknown"
                 log("using device:", d.ieeeAddr, "'" + model + "', configured:", configured)
             })
         })

@@ -34,7 +34,7 @@ export function buildCommands(mapped: MappedDevice, commands: KeyValue): any[] {
         if (command === "brightness") return
         res.push(...buildCommand(mapped, command, value, commands))
     })
-    return res.filter(e => e)
+    return res.filter((e) => e)
 }
 
 type Callback = (error: any) => void
@@ -54,13 +54,13 @@ function _op(options: Options, cb?: Callback): KeyValue | undefined {
 }
 
 function handle(cb: Callback, promise: Promise<any>) {
-    promise.then(() => cb(null)).catch(error => cb(error))
+    promise.then(() => cb(null)).catch((error) => cb(error))
 }
 
 export class SheperdEndpoint {
     constructor(public endpoint: Endpoint) {}
-    get ieeeAddr(): string {
-        return this.endpoint["deviceNetworkAddress"]
+    get ieeeAddr(): number {
+        return this.endpoint.deviceNetworkAddress
     }
     bind(clusterKey: string | number, target: Group | Endpoint | SheperdEndpoint, cb: Callback) {
         if (target instanceof SheperdEndpoint) {
@@ -118,7 +118,7 @@ export class Sheperd {
     constructor(public controller: Controller) {}
 
     find(ieeeAddr: string, endpointID: number): SheperdEndpoint | null {
-        const device = this.controller.getDeviceByAddress(ieeeAddr)
+        const device = this.controller.getDeviceByIeeeAddr(ieeeAddr)
         if (!device) return null
         const ep = device.getEndpoint(endpointID)
         if (!ep) return null

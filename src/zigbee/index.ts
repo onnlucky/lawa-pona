@@ -1,12 +1,12 @@
+import { Controller } from "zigbee-herdsman"
 import {
-    Controller,
+    DeviceAnnouncePayload,
+    DeviceInterviewPayload,
+    DeviceJoinedPayload,
     Events,
-    MessageEvent,
-    AnnounceEvent,
-    InterviewEvent,
-    JoinedEvent,
-    LeaveEvent,
-} from "zigbee-herdsman"
+    MessagePayload,
+} from "zigbee-herdsman/dist/controller/events"
+import { DeviceLeavePayload } from "zigbee-herdsman/dist/adapter/events"
 import { Sheperd, SheperdEndpoint, MappedDevice } from "./SheperdCompat"
 // @ts-ignore
 import zigbeeShepherdConverters from "zigbee-shepherd-converters"
@@ -15,6 +15,10 @@ import { ZigbeeDevice, ZigbeeContext } from "./ZigbeeDevice"
 import { error, log, debug, command, onevent } from "log"
 import { findUsbDevice } from "findUsbDevice"
 import { Device } from "zigbee-herdsman/dist/controller/model"
+
+process.on("unhandledRejection", (e) => {
+    error("unhandledRejection", e)
+})
 
 function sleep(seconds: number) {
     return new Promise((resolve) => setTimeout(resolve, seconds * 1000))
@@ -47,6 +51,11 @@ const reportingClusters = {
         { attribute: "currentPositionLiftPercentage", ...defaultConfiguration },
         { attribute: "currentPositionTiltPercentage", ...defaultConfiguration },
     ],
+    ssIasZone: [{ attribute: "zoneStatus", ...defaultConfiguration }],
+    genPowerCfg: [
+        { attribute: "batteryPercentageRemaining", ...defaultConfiguration, minimumReportInterval: 60 },
+        { attribute: "batteryVoltage", ...defaultConfiguration, minimumReportInterval: 60 },
+    ],
 }
 
 export async function start(context: ZigbeeContext, callback: (error?: string) => void) {
@@ -64,26 +73,82 @@ export async function start(context: ZigbeeContext, callback: (error?: string) =
 
 async function runController(context: ZigbeeContext, callback: Function): Promise<void> {
     const serialPort = await findUsbDevice()
-    const controller = new Controller({
+
+    function acceptJoiningDeviceHandler(ieeeAddr: string, networkAddress: number): boolean {
+        const device = controller.getDeviceByIeeeAddr(ieeeAddr)
+        console.log("acceptJoiningDeviceHandler:", ieeeAddr, networkAddress, !!device, "\n")
+
+        if (device) {
+            if (networkAddress && device.networkAddress !== networkAddress) {
+                console.log("removing old device entry")
+                device.removeFromDatabase()
+                return true
+            }
+            device.endpoints.forEach((endpoint) => {
+                endpoint["_binds"] = []
+            })
+            device["_interviewCompleted"] = false
+        }
+        return true
+    }
+
+    const options: any = {
+        network: {
+            panID: 0xef01,
+            channelList: [26],
+            extendedPanID: [0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x11, 0x22],
+            networkKey: [
+                0x4e, 0xa1, 0xff, 0x7f, 0x9d, 0xd2, 0xed, 0xbb, 0x25, 0xb2, 0x87, 0x9d, 0xe4, 0x1e, 0x3d, 0x9c,
+            ],
+        },
         databasePath: "data.json",
+        adapter: { concurrent: 2, delay: 0 },
         serialPort: { path: serialPort },
-    })
+        acceptJoiningDeviceHandler,
+    }
+
+    const controller = new Controller(options, console)
+
+    const actualOnDeviceAnnounce = controller["onDeviceAnnounce"] as Function
+    controller["onDeviceAnnounce"] = function (payload: any) {
+        const { ieeeAddr, networkAddress } = payload
+        if (ieeeAddr && networkAddress && !controller.getDeviceByIeeeAddr(ieeeAddr)) {
+            // If an unknown device announces itself, it's basically a join.
+            console.log("hijacked onDeviceAnnounce rerouted to onDeviceJoined", payload)
+            controller["onDeviceJoined"](payload)
+        } else {
+            actualOnDeviceAnnounce.call(controller, payload)
+        }
+    }
 
     let running = true
     let exit: Function
     const exitPromise = new Promise((resolve) => (exit = resolve))
+
     controller.on(Events.adapterDisconnected, (event: any) => {
         onevent("Events.adapterDisconnected", event?.device?.ieeeAddr ?? event?.ieeeAddr, event)
         running = false
+        controller.stop()
         exit()
     })
 
-    controller.on(Events.deviceAnnounce, (event: AnnounceEvent) => {
+    controller.on(Events.deviceJoined, (event: DeviceJoinedPayload) => {
+        onevent("Events.deviceJoined", event.device.ieeeAddr, event.device.modelID)
+    })
+
+    controller.on(Events.deviceInterview, (event: DeviceInterviewPayload) => {
+        const device = event.device
+        onevent("Events.deviceInterview", device.ieeeAddr, device.endpoints.length, device.modelID)
+        if (event.status !== "successful") return
+        configureDevice(device)
+    })
+
+    controller.on(Events.deviceAnnounce, (event: DeviceAnnouncePayload) => {
         onevent("Events.deviceAnnounce", event?.device?.ieeeAddr, event?.device?.modelID)
 
         const device = event.device
         if (!device) return
-        if (device.meta.configured) return
+        if (device["meta"].configured) return
 
         if (!context.hasDevice(device.ieeeAddr)) {
             log("Not configuring device because it is not defined:", device.ieeeAddr, device.modelID)
@@ -96,19 +161,9 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
         }
     })
 
-    controller.on(Events.deviceInterview, (event: InterviewEvent) => {
-        const device = event.device
-        onevent("Events.deviceInterview", device.ieeeAddr, device.getEndpoints().length, device.modelID)
-        configureDevice(device)
-    })
-
-    controller.on(Events.deviceJoined, (event: JoinedEvent) => {
-        onevent("Events.deviceJoined", event.device.ieeeAddr, event.device.modelID)
-    })
-
-    controller.on(Events.deviceLeave, (event: LeaveEvent) => {
+    controller.on(Events.deviceLeave, (event: DeviceLeavePayload) => {
         triedConfiguring.delete(event.ieeeAddr)
-        const device = controller.getDeviceByAddress(event.ieeeAddr)
+        const device = controller.getDeviceByIeeeAddr(event.ieeeAddr)
         onevent("Events.deviceLeave", event.ieeeAddr, device ? device.modelID : "unknown")
         if (device) {
             device.removeFromDatabase()
@@ -116,10 +171,10 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
     })
 
     const triedConfiguring = new Set<string>()
-    controller.on(Events.message, (event: MessageEvent) => {
+    controller.on(Events.message, (event: MessagePayload) => {
         const device = event.device
-        if (!device.meta.configured) {
-            onevent("Events.message", event.type, device.ieeeAddr, device.getEndpoints().length, device.modelID)
+        if (!device["meta"].configured) {
+            onevent("Events.message", event.type, device.ieeeAddr, device.endpoints.length, device.modelID)
             if (!triedConfiguring.has(device.ieeeAddr)) {
                 triedConfiguring.add(device.ieeeAddr)
                 configureDevice(event.device)
@@ -134,7 +189,7 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
             } else {
                 command(device.ieeeAddr, "<--", event.cluster, event.type, event.data, device.modelID)
             }
-            delegate.processor.receiveCommand(event.cluster, event.type, event.data)
+            delegate.processor.receiveCommand(String(event.cluster), event.type, event.data)
             return
         }
         debug(device.ieeeAddr, event.cluster, event.type, event.data)
@@ -147,18 +202,19 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
     controller.permitJoin(true)
     const version = await controller.getCoordinatorVersion()
     const sheperd = new Sheperd(controller)
-    const coordinator = controller.getDevice({ type: "Coordinator" })!.getEndpoint(1)
+    const coordinatorDevice = controller.getDevicesByType("Coordinator")[0]
+    const coordinator = coordinatorDevice.getEndpoint(1)
     const sheperdCoordinator = new SheperdEndpoint(coordinator)
     log("...started...", version)
 
     setTimeout(async () => {
         while (running) {
             await sleep(10)
-            const devices = controller.getDevices({})
+            const devices = controller.getDevices()
             for (const device of devices) {
                 if (device.type === "Coordinator") continue
                 if (!device.interviewCompleted) continue
-                if (!device.meta.configured) continue
+                if (!device["meta"].configured) continue
                 if (device["powerSource"] === "Battery") continue
 
                 const delegate = x(device).__delegate
@@ -183,14 +239,14 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
         }
     })
 
-    const promises = controller.getDevices({}).map((device) => {
+    const promises = controller.getDevices().map((device) => {
         if (device.type === "Coordinator") return
         if (!device.interviewCompleted) {
             error("found a unconfigured device:", device.ieeeAddr, device.modelID)
             return
         }
 
-        if (!device.meta.configured) {
+        if (!device["meta"].configured) {
             configureDevice(device)
             return
         }
@@ -209,18 +265,19 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
     callback()
 
     async function readReportOrPing(device: Device) {
+        if (!device.interviewCompleted) return
         const delegate: ZigbeeDevice = (device as any).__delegate
         const processor = delegate ? delegate.processor : null
 
         let setupReport = false
         try {
-            device.getEndpoints().forEach(async (endpoint) => {
-                Object.entries(reportingClusters).forEach(async ([cluster, config]) => {
-                    if (!endpoint.supportsInputCluster(cluster)) return
+            for (const endpoint of device.endpoints) {
+                for (const [cluster, config] of Object.entries(reportingClusters)) {
+                    if (!endpoint.supportsInputCluster(cluster)) continue
                     setupReport = true
 
                     // seems to get confused if we setup reportings
-                    if (device.modelID === "ZG9101SAC-HP") return
+                    if (device.modelID === "ZG9101SAC-HP") continue
 
                     if (processor) {
                         debug("requesting current status:", device.ieeeAddr, device.modelID, cluster)
@@ -234,11 +291,11 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
                     debug("setting up reporting:", device.ieeeAddr, device.modelID, cluster)
                     await endpoint.bind(cluster, coordinator)
                     await endpoint.configureReporting(cluster, config)
-                })
-            })
+                }
+            }
 
             if (setupReport) return
-            if (device["powerSource"] === "Battery") return
+            if (device.powerSource === "Battery") return
 
             debug("pinging device:", device.ieeeAddr, device.modelID)
             await device.ping()
@@ -274,14 +331,14 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
             return
         }
 
-        if (device.meta.configured) {
+        if (device["meta"].configured) {
             debug(device.ieeeAddr, "already configured...", device.modelID)
             return
         }
 
         if (!mapped.configure) {
             debug(device.ieeeAddr, "trivial configuration...", device.modelID)
-            device.meta.configured = true
+            device["meta"].configured = true
             device.save()
             log("configured device:", device.ieeeAddr, device.modelID)
             addDevice(device, mapped)
@@ -290,10 +347,10 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
 
         debug(device.ieeeAddr, "doing configuration...")
         try {
-            mapped.configure(device.ieeeAddr, sheperd, sheperdCoordinator, (ok: any, error: any) => {
+            mapped.configure(device.ieeeAddr, sheperd, sheperdCoordinator, (ok: any, e: any) => {
                 if (!ok) {
-                    error(device.ieeeAddr, "configuration failed:", error, device.modelID)
-                    device.meta.configured = false
+                    error(device.ieeeAddr, "configuration failed:", e, device.modelID)
+                    device["meta"].configured = false
                     device.save()
                     return
                 }
@@ -301,7 +358,7 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
                 log("configured device:", device.ieeeAddr, device.modelID)
                 addDevice(device, mapped)
             })
-            device.meta.configured = true
+            device["meta"].configured = true
             device.save()
         } catch (e) {
             error("error mapped.configure:", e)
