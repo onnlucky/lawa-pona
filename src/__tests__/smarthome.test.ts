@@ -29,6 +29,7 @@ function device(ieeeAddr: string): ZigbeeDevice {
 }
 
 const mockZigbeeContext = {
+    networkOptions: {},
     devicesByAddr: {} as { [key: string]: ZigbeeDevice },
     bind() {},
     offline() {},

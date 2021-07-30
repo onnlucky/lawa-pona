@@ -15,7 +15,7 @@ export class Rule extends Link {
     context: Context
     constructor(public sources: ActiveState[], public body: () => void) {
         super()
-        sources.forEach(source => source._meta.links.push(this))
+        sources.forEach((source) => source._meta.links.push(this))
     }
 
     static current(): Rule | null {
@@ -39,7 +39,7 @@ export class Rule extends Link {
         this.context = context
         context.anyStateChanges = false
         try {
-            context.log("rule [" + this.sources.map(s => s.toString()).join(",") + "]")
+            context.log("rule [" + this.sources.map((s) => s.toString()).join(",") + "]")
             this.body()
         } finally {
             if (context.anyStateChanges) {

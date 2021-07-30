@@ -7,14 +7,14 @@ import {
     MessagePayload,
 } from "zigbee-herdsman/dist/controller/events"
 import { DeviceLeavePayload } from "zigbee-herdsman/dist/adapter/events"
-import { Sheperd, SheperdEndpoint, MappedDevice } from "./SheperdCompat"
+import { Device } from "zigbee-herdsman/dist/controller/model"
 // @ts-ignore
 import zigbeeShepherdConverters from "zigbee-shepherd-converters"
-import { ZigbeeDevice, ZigbeeContext } from "./ZigbeeDevice"
 
-import { error, log, debug, command, onevent } from "log"
-import { findUsbDevice } from "findUsbDevice"
-import { Device } from "zigbee-herdsman/dist/controller/model"
+import { Sheperd, SheperdEndpoint, MappedDevice } from "./SheperdCompat"
+import { ZigbeeDevice, ZigbeeContext } from "./ZigbeeDevice"
+import { error, log, debug, command, onevent } from "../log"
+import { findUsbDevice } from "../findUsbDevice"
 
 process.on("unhandledRejection", (e) => {
     error("unhandledRejection", e)
@@ -52,10 +52,10 @@ const reportingClusters = {
         { attribute: "currentPositionTiltPercentage", ...defaultConfiguration },
     ],
     ssIasZone: [{ attribute: "zoneStatus", ...defaultConfiguration }],
-    genPowerCfg: [
-        { attribute: "batteryPercentageRemaining", ...defaultConfiguration, minimumReportInterval: 60 },
-        { attribute: "batteryVoltage", ...defaultConfiguration, minimumReportInterval: 60 },
-    ],
+    // genPowerCfg: [
+    //     { attribute: "batteryPercentageRemaining", ...defaultConfiguration, minimumReportInterval: 60 },
+    //     { attribute: "batteryVoltage", ...defaultConfiguration, minimumReportInterval: 60 },
+    // ],
 }
 
 export async function start(context: ZigbeeContext, callback: (error?: string) => void) {
@@ -93,15 +93,8 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
     }
 
     const options: any = {
-        network: {
-            panID: 0xef01,
-            channelList: [26],
-            extendedPanID: [0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x11, 0x22],
-            networkKey: [
-                0x4e, 0xa1, 0xff, 0x7f, 0x9d, 0xd2, 0xed, 0xbb, 0x25, 0xb2, 0x87, 0x9d, 0xe4, 0x1e, 0x3d, 0x9c,
-            ],
-        },
-        databasePath: "data.json",
+        network: { ...context.networkOptions },
+        databasePath: process.env.HOME + "/zigbee-data-store.json",
         adapter: { concurrent: 2, delay: 0 },
         serialPort: { path: serialPort },
         acceptJoiningDeviceHandler,

@@ -1,5 +1,5 @@
 import { CommandProcessor, OnOffDevice, isNumber } from "./Device"
-import { Context } from "activestate/Context"
+import { Context } from "../activestate/Context"
 
 export class Outlet extends OnOffDevice {
     processor = new OutletCommandProcessor(this)

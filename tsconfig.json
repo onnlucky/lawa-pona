@@ -6,7 +6,7 @@
         "alwaysStrict": true,
 
         "esModuleInterop": true,
-        "target": "es2015",
+        "target": "es6",
         "module": "commonjs",
         "moduleResolution": "node",
 
@@ -14,7 +14,8 @@
         "strictNullChecks": true,
         "noImplicitThis": true,
         "sourceMap": true,
-        "allowJs": true
+        "allowJs": true,
+        "declaration": true
     },
     "exclude": ["node_modules", "dist", "jest.config.js"],
     "filesGlob": ["**/*.ts"]

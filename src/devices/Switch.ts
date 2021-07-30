@@ -1,5 +1,5 @@
 import { CommandProcessor, OnOffDevice, Device } from "./Device"
-import { bind } from "activestate/Links"
+import { bind } from "../activestate/Links"
 
 export class Switch extends OnOffDevice {
     processor = new SwitchCommandProcessor(this)

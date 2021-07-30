@@ -1,5 +1,5 @@
 import { CommandProcessor, OnOffDevice, inSameRange, isNumber, isBoolean } from "./Device"
-import { Context } from "activestate/Context"
+import { Context } from "../activestate/Context"
 
 export class Light extends OnOffDevice {
     processor = new LightCommandProcessor(this)

@@ -1,9 +1,9 @@
-import { buildCommands, MappedDevice } from "./SheperdCompat"
 import { Device } from "zigbee-herdsman/dist/controller/model"
-import { start as startZigbeeController } from "zigbee"
-
-import { log, command } from "log"
-import { Context } from "activestate/Context"
+import { buildCommands, MappedDevice } from "./SheperdCompat"
+import { log, command } from "../log"
+import { NetworkOptions } from "../smarthome"
+import { start as startZigbeeController } from "../zigbee"
+import { Context } from "../activestate/Context"
 
 export interface ZigbeeCommandProcessor {
     receiveCommand(_cluster: string, _command: string, _data: any): void
@@ -60,6 +60,8 @@ export class ZigbeeContext {
         if (!__current) throw Error("zigbee not initialized")
         return __current
     }
+
+    constructor(readonly networkOptions: NetworkOptions = {}) {}
 
     offline() {
         Object.values(this.devicesByAddr).forEach((d) => {

@@ -1,7 +1,7 @@
 import { ActiveState, ActiveStateListener } from "../activestate/ActiveState"
-import { ZigbeeDevice, ZigbeeCommandProcessor, ZigbeeContext } from "zigbee/ZigbeeDevice"
-import { Context } from "activestate/Context"
-import { SmartHome } from "smarthome"
+import { ZigbeeDevice, ZigbeeCommandProcessor, ZigbeeContext } from "../zigbee/ZigbeeDevice"
+import { Context } from "../activestate/Context"
+import { SmartHome } from "../smarthome"
 
 // here 3 things come together
 // 1. ZigbeeDevice: the remote device as the zigbee software stack represents it

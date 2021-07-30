@@ -1,6 +1,6 @@
 import { Device, CommandProcessor } from "./Device"
 import { Light } from "./Light"
-import { bind } from "activestate/Links"
+import { bind } from "../activestate/Links"
 
 export class Dimmer extends Device {
     processor = new DimmerCommandProcessor(this)

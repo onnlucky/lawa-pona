@@ -1,18 +1,25 @@
-import { ActiveState } from "activestate/ActiveState"
-import { ZigbeeContext } from "zigbee/ZigbeeDevice"
-import { Device, Light } from "devices"
-import { Context } from "activestate/Context"
-export { rule } from "activestate/Links"
+import { ActiveState } from "../activestate/ActiveState"
+import { ZigbeeContext } from "../zigbee/ZigbeeDevice"
+import { Device, Light } from "../devices"
+import { Context } from "../activestate/Context"
+export { rule } from "../activestate/Links"
 import * as units from "./units"
-import { SyncServer } from "remote/sync"
+import { SyncServer } from "../remote/sync"
 import { WeekDay, WEEKDAYS } from "./units"
 
 export { units }
 
+export interface NetworkOptions {
+    panID?: number
+    channelList?: number[]
+    extendedPanID?: number[]
+    networkKey?: number[]
+}
 export interface SmartHomeOptions {
-    name: string
-    location: string
-    port: number
+    name?: string
+    location?: string
+    port?: number
+    network?: NetworkOptions
 }
 
 let __current: SmartHome | null = null
@@ -42,12 +49,12 @@ export class SmartHome extends ActiveState {
         __current = null
     }
 
-    constructor(options: Partial<SmartHomeOptions> = {}) {
+    constructor(options: SmartHomeOptions = {}) {
         super("smarthome")
         if (__current) throw Error("a SmartHome object was already created")
         __current = this
         const context = new Context().bind()
-        new ZigbeeContext().bind()
+        new ZigbeeContext(options.network).bind()
 
         if (options.port !== undefined) {
             if (options.port > 0) {
@@ -72,7 +79,7 @@ export class SmartHome extends ActiveState {
     forEachDevice(body: (device: Device) => void) {
         const context = Context.getCurrent()
         if (!context) return
-        context.states.forEach(state => {
+        context.states.forEach((state) => {
             if (!(state instanceof Device)) return
             body(state)
         })
@@ -81,7 +88,7 @@ export class SmartHome extends ActiveState {
     forEachLight(body: (light: Light) => void) {
         const context = Context.getCurrent()
         if (!context) return
-        context.states.forEach(state => {
+        context.states.forEach((state) => {
             if (!(state instanceof Light)) return
             body(state)
         })
