@@ -36,7 +36,7 @@ export class SmartHome extends ActiveState {
         const day = WEEKDAYS[now.getDay()]
         const hour = now.getHours()
         const minute = now.getMinutes()
-        const latenight = this.hour >= 1 && this.hour < 6
+        const latenight = hour >= 1 && hour < 6
         this.updateState({ day, hour, minute, latenight } as any)
     }
 

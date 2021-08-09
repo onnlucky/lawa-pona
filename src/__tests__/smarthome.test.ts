@@ -53,6 +53,7 @@ beforeEach(() => {
 
 afterEach(() => {
     home.remove()
+    Context.getCurrent()?.unbind()
     mockZigbeeContext.devicesByAddr = {}
 })
 
@@ -109,6 +110,7 @@ test("space", () => {
 
 test("state reports should not interfere with timers", () => {
     const light = new Light("0x1")
+    light.processor.isIkea = jest.fn(() => true)
     const motion = new MotionSensor("0x2")
     rule([motion], () => {
         if (motion.on) {
@@ -128,6 +130,21 @@ test("state reports should not interfere with timers", () => {
     // when receiving a report, should be used
     light.processor.receiveCommand("genLevelCtrl", "attributeReport", { currentLevel: 254 })
     expect(light.on).toBeTruthy()
+})
+
+test("offline reports should not turn on lamps", () => {
+    const light = new Light("0x1")
+    expect(light.on).toBeFalsy()
+    light.updateState({ brightness: 254 })
+    expect(light.on).toBeTruthy()
+    light.updateState({ on: false })
+    expect(light.on).toBeFalsy()
+    light.updateState({ on: false })
+
+    light.processor.receiveCommand("status", "status", { online: false })
+    expect(light.on).toBeFalsy()
+    light.processor.receiveCommand("status", "status", { online: true })
+    expect(light.on).toBeFalsy()
 })
 
 test("location", () => {
