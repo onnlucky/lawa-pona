@@ -197,7 +197,7 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
     const sheperd = new Sheperd(controller)
     const coordinatorDevice = controller.getDevicesByType("Coordinator")[0]
     const coordinator = coordinatorDevice.getEndpoint(1)
-    const sheperdCoordinator = new SheperdEndpoint(coordinator)
+    const sheperdCoordinator = new SheperdEndpoint(coordinator, coordinatorDevice.ieeeAddr)
     log("...started...", version)
 
     setTimeout(async () => {

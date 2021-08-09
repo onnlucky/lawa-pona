@@ -58,10 +58,7 @@ function handle(cb: Callback, promise: Promise<any>) {
 }
 
 export class SheperdEndpoint {
-    constructor(public endpoint: Endpoint) {}
-    get ieeeAddr(): number {
-        return this.endpoint.deviceNetworkAddress
-    }
+    constructor(public endpoint: Endpoint, public ieeeAddr: string) {}
     bind(clusterKey: string | number, target: Group | Endpoint | SheperdEndpoint, cb: Callback) {
         if (target instanceof SheperdEndpoint) {
             target = target.endpoint
@@ -123,6 +120,6 @@ export class Sheperd {
         const ep = device.getEndpoint(endpointID)
         if (!ep) return null
 
-        return new SheperdEndpoint(ep)
+        return new SheperdEndpoint(ep, ieeeAddr)
     }
 }
