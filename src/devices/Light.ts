@@ -10,7 +10,7 @@ export class Light extends OnOffDevice {
         const brightness = update.brightness
         if (on && this.brightness === 0) {
             this.brightness = 255
-        } else if (brightness !== undefined && brightness > 0 && on === undefined) {
+        } else if (brightness !== undefined && brightness > 0 && on === undefined && !this.processor.byDevice) {
             this.on = true
         }
         if (this.brightness < 0) this.brightness = 0
@@ -36,6 +36,7 @@ class LightCommandProcessor extends CommandProcessor<Light> {
     receiveCommand(_cluster: string, command: string, data: any) {
         if (command === "status") {
             if (isBoolean(data.online)) {
+                this.byDevice = true
                 this.state.updateState({ online: data.online })
             }
         } else if (command === "attributeReport") {
@@ -53,10 +54,6 @@ class LightCommandProcessor extends CommandProcessor<Light> {
             if (isNumber(data.currentLevel)) {
                 state.brightness = data.currentLevel
                 if (!inSameRange(this.state.brightness, data.currentLevel, 2)) {
-                    change = true
-                }
-                if (!this.state.on && !inSameRange(data.currentLevel, 0, 2) && this.isIkea()) {
-                    state.on = true
                     change = true
                 }
             }
