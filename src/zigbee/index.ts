@@ -343,8 +343,9 @@ async function runController(context: ZigbeeContext, callback: Function): Promis
             mapped.configure(device.ieeeAddr, sheperd, sheperdCoordinator, (ok: any, e: any) => {
                 if (!ok) {
                     error(device.ieeeAddr, "configuration failed:", e, device.modelID)
-                    device["meta"].configured = false
-                    device.save()
+                    // device["meta"].configured = false
+                    // device.save()
+                    addDevice(device, mapped)
                     return
                 }
 
